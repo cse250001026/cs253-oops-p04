@@ -5,7 +5,9 @@
 
 class BfsOracle {
 private :
-    static int count_comp(Graph &g, int delNode, int delEdge, 
+    /* Counts connected components after optionally excluding a vertex
+    and an edge. -1 means no deletion. */
+    static int count_comp(const Graph &g, int delNode, int delEdge, 
                           vector<bool> &vis, vector<int> &que) {
         int V = g.V;
 
@@ -19,13 +21,15 @@ private :
             count++;
             vis[s] = true;
             
+            // Use an array-backed queue to avoid reallocating a queue
+            // for every connected component and deletion scenario.
             int head = 0, tail = 0;
             que[tail++] = s;
             
             while (head < tail) {
                 int u = que[head++];
 
-                for (AdjEdge& e : g.adj[u]) {
+                for (const AdjEdge& e : g.adj[u]) {
                     if (e.id == delEdge || e.to == delNode || vis[e.to]) continue;
 
                     vis[e.to] = true;
@@ -37,7 +41,9 @@ private :
     }
 
 public : 
-    static OracleResult solve(Graph &g) {
+    /*Brute-force oracle for articulation points and bridges.
+    Time: O((V + E)^2)*/
+    static OracleResult solve(const Graph &g) {
         OracleResult res;
 
         int V = g.V;
@@ -52,18 +58,20 @@ public :
             int c = count_comp(g, v, -1, vis, que);
             res.components_after_removal[v] = c;
 
+            // A vertex is articulate point if deleting it increases the connected comp.
             if (c > C0) res.articulation_points.push_back(v); // sorted in asc order
         }
 
-        for (Edge& e : g.edges) {
+        for (const Edge& e : g.edges) {
             if (e.u == e.v) continue; // Self loop cannot be bridges
 
+            // A edge is a bridge if deleting it increases the connected comp.
+            // edge IDs are used to distinguish parallel edges.
             if (count_comp(g, -1, e.id, vis, que) > C0) {
                 res.bridge_ids.push_back(e.id);
                 res.bridges.push_back(e);
             }
         }
-
         return res;
     }
 
