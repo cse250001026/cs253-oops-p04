@@ -1,9 +1,10 @@
-#include "DSU.h"
+#include "DSU.hpp"
 #include <numeric>
+using namespace std;
 
 DSU::DSU(int n) {
     rep.resize(n);
-    std::iota(rep.begin(), rep.end(), 0);
+    iota(rep.begin(), rep.end(), 0);
 }
 
 int DSU::find(int v) {
@@ -21,4 +22,12 @@ int DSU::find(int v) {
     }
 
     return root;
+}
+
+void DSU::unite(int u, int v) {
+    int root_u = find(u);
+    int root_v = find(v);
+    if (root_u != root_v) {
+        rep[root_u] = root_v;
+    }
 }

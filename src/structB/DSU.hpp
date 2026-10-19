@@ -2,9 +2,12 @@
 
 #include <vector>
 
+using namespace std;
+
 struct DSU {
-    std::vector<int> rep;
+    vector<int> rep;
 
     explicit DSU(int n);
     int find(int v);
+    void unite(int u, int v);
 };

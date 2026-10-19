@@ -1,20 +1,23 @@
-#include "makeCyclePath.h"
+#include "makeCyclePath.hpp"
 #include <utility>
+using namespace std;
 
 void markCyclePath(
     int v,
     int u,
-    const std::vector<int>& parent,
-    const std::vector<int>& depth,
-    const std::vector<int>& parentEdge,
+    const vector<int>& parent,
+    const vector<int>& depth,
+    const vector<int>& parentEdge,
     DSU& dsu,
-    std::vector<bool>& marked
+    vector<bool>& marked
 ) {
+    if (v == u) return;
+
     // In an undirected DFS, every non-tree edge
     // connects a vertex to one of its ancestors.
     // Make v the deeper endpoint.
     if (depth[v] < depth[u]) {
-        std::swap(v, u);
+        swap(v, u);
     }
 
     // Process tree edges from v upward until u.
@@ -28,5 +31,6 @@ void markCyclePath(
 
         // Skip this vertex in future path traversals.
         dsu.rep[x] = dsu.find(parent[x]);
+        v = dsu.rep[x];
     }
 }
