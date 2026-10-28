@@ -20,17 +20,23 @@ void markCyclePath(
         swap(v, u);
     }
 
-    // Process tree edges from v upward until u.
+    // Process tree edges from v upward until reaching u.
+    // By querying get_highest(v), we jump directly to the shallowest
+    // vertex in v's current 2-edge connected component.
     while (true) {
-        int x = dsu.find(v);
+        int x = dsu.get_highest(v);
 
         if (depth[x] <= depth[u]) break;
 
         // The edge from x to its parent lies on the cycle.
-        marked[parentEdge[x]] = true;
+        if (parentEdge[x] != -1) {
+            marked[parentEdge[x]] = true;
+        }
 
-        // Skip this vertex in future path traversals.
-        dsu.rep[x] = dsu.find(parent[x]);
-        v = dsu.rep[x];
+        // Skip processed tree edge by uniting x's component with parent[x]'s
+        // component using union-by-rank. This maintains the O((V+E) alpha(V)) bound.
+        int p = parent[x];
+        dsu.unite(x, p, depth);
+        v = p;
     }
 }
