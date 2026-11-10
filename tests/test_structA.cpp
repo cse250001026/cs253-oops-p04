@@ -193,7 +193,7 @@ void stressTests() {
     }
     {
         Graph g(N);
-        // 999,999 total edges, all in the same cycle-rich connected component.
+        //Stress test with 100,000 vertices and 1,000,000 edges in a single biconnected component.
         for (int i = 0; i < N; ++i) g.add_edge(i, (i+1)%N);
         for (int i = 0; i < 900000; ++i) g.add_edge(i%N, (i%N+17)%N);
         auto r = runStructA(g);

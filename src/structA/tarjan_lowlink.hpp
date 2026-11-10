@@ -1,5 +1,5 @@
-#ifndef STRUCT_A_HPP
-#define STRUCT_A_HPP
+#ifndef TARJAN_LOWLINK_HPP
+#define TARJAN_LOWLINK_HPP
 
 #include "../../include/graph.hpp"
 
@@ -105,4 +105,11 @@ inline StructAResult runStructA(const Graph& g) {
     return res;
 }
 
-#endif
+class TarjanSolver {
+public:
+    // Computes articulation points, bridges, and biconnected components
+    // using an explicit heap-allocated stack (iterative DFS) in O(V + E) time.
+    static StructAResult solve(const Graph& g) { return runStructA(g); }
+};
+
+#endif // TARJAN_LOWLINK_HPP
