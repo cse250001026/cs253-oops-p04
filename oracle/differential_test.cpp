@@ -4,6 +4,7 @@ using namespace std;
 #include "../src/structA/tarjan_lowlink.hpp"
 #include "../src/structB/union_find_bridges.hpp"
 #include "bfs_oracle.hpp"
+#include "failure_shrinker.hpp"
 
 string compare(const Graph& g) {
     StructAResult a = runStructA(g);
@@ -54,6 +55,16 @@ void show_failure(const Graph& g, const vector<pair<int, int>>& ops,
     print_vec(a.components_after_removal);
     cerr << "Oracle: ";
     print_vec(o.components_after_removal);
+
+    auto small = shrink_failure(g.V, ops, mismatch);
+
+    cerr << "\nShrunk from " << ops.size() << " to "
+        << small.size() << " edges\n";
+
+    cerr << "Remaining edges (in order):\n";
+
+    for (auto [u, v] : small)
+        cerr << u << ' ' << v << '\n';
 }
 
 int main(int argc, char* argv[]) {
