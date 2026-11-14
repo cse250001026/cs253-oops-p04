@@ -17,20 +17,22 @@
 
 struct OpCounters {
     // Shared by A, B and the oracle
-    uint64_t half_edges_scanned = 0;  // one per AdjEdge read from adj[u]
-    uint64_t vertices_visited   = 0;  // one per vertex first discovered
-    uint64_t max_stack_depth    = 0;  // deepest explicit DFS stack seen
+    uint64_t half_edges_scanned = 0;  // one per AdjEdge read in the DFS/BFS traversal loop
+                                      // (A: DFS loop only, not the later bcc_vertices pass)
+    uint64_t vertices_visited   = 0;  // one per vertex first discovered (oracle: in every BFS)
+    uint64_t max_stack_depth    = 0;  // deepest explicit DFS stack seen (A and B only)
 
     // Structure A only
     uint64_t edge_stack_pushes  = 0;  // one per edge id pushed for BCCs
 
     // Structure B only
-    uint64_t uf_finds           = 0;  // one per find() call
-    uint64_t uf_find_steps      = 0;  // one per parent pointer followed
-    uint64_t uf_unions          = 0;  // one per tree edge marked
+    uint64_t uf_finds           = 0;  // one per DSU::find() call, both DSUs, incl. get_highest()
+    uint64_t uf_find_steps      = 0;  // one per parent pointer followed to the root
+    uint64_t uf_unions          = 0;  // one per tree edge marked in markCyclePath()
 
     // Oracle only
-    uint64_t bfs_runs           = 0;  // one per BFS started after a removal
+    uint64_t bfs_runs           = 0;  // one per count_comp() call, including the first
+                                      // (no deletion) call: 1 + V + E' in total
 
     void reset() { *this = OpCounters{}; }
 };
