@@ -225,12 +225,12 @@ def fig_cache(rows, out_dir):
         try:
             count = float(r["count"])
         except ValueError:
-            continue  # <not counted> or <not supported>, e.g. the E-core counters of a pinned run
+            continue
         V, E, s = int(r["V"]), int(r["E"]), r["structure"]
         base = r["event"].split("/")[-2] if r["event"].count("/") >= 2 else r["event"]
         base = base.split(":")[0]
         totals[(V, E, s, base)] += count
-        solves[(V, E, s)] = int(r["solves"])  # solves added on top of the "none" run
+        solves[(V, E, s)] = int(r["solves"])
         if count:
             pmus[(V, E, s)].add(r["event"].split("/")[0] if r["event"].count("/") >= 2 else "")
     if any(len(p) > 1 for p in pmus.values()):

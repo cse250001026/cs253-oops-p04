@@ -13,17 +13,6 @@ EVENTS=cycles:u,instructions:u,L1-dcache-loads:u,L1-dcache-load-misses:u,LLC-loa
 
 SIZES=("2000 10000" "20000 100000" "100000 500000" "100000 1000000")
 
-# Each size is profiled three times. The "none" run builds the graph and makes
-# the one Structure A solve that bin/bench always runs as its reference. The A
-# and B runs do the same and add their own solves, so (A - none) and (B - none)
-# count only the added solves. The "solves" column says how many there are:
-#   none  0
-#   A     REPS       the timed solves
-#   B     REPS + 1   the timed solves and one untimed warm-up solve
-#
-# taskset starts perf, not the other way round, so perf and bin/bench run only
-# on CPU $CPU. On a hybrid CPU the E-core counters (cpu_atom/...) then read
-# <not counted> instead of picking up the start of the run on another core.
 out="$RAW/cache_profile.csv"
 echo "V,E,seed,structure,solves,event,count" > "$out"
 for pair in "${SIZES[@]}"; do
