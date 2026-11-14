@@ -2,6 +2,7 @@
 #define BFS_ORACLE_HPP
 
 #include "../include/graph.hpp"
+#include "../bench/counters.hpp"
 
 class BfsOracle {
 private :
@@ -10,6 +11,7 @@ private :
     static int count_comp(const Graph &g, int delNode, int delEdge, 
                           vector<bool> &vis, vector<int> &que) {
         int V = g.V;
+        BENCH_INC(bfs_runs);
 
         fill(vis.begin(), vis.end(), false);
 
@@ -20,7 +22,8 @@ private :
 
             count++;
             vis[s] = true;
-            
+            BENCH_INC(vertices_visited);    
+
             // Use an array-backed queue to avoid reallocating a queue
             // for every connected component and deletion scenario.
             int head = 0, tail = 0;
@@ -30,9 +33,12 @@ private :
                 int u = que[head++];
 
                 for (const AdjEdge& e : g.adj[u]) {
+                    BENCH_INC(half_edges_scanned);
+
                     if (e.id == delEdge || e.to == delNode || vis[e.to]) continue;
 
                     vis[e.to] = true;
+                    BENCH_INC(vertices_visited);
                     que[tail++] = e.to;
                 }
             }
