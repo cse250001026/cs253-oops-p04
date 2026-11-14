@@ -1,5 +1,6 @@
 #include "DSU.hpp"
 #include <numeric>
+#include "../../bench/counters.hpp"
 using namespace std;
 
 DSU::DSU(int n) {
@@ -11,9 +12,11 @@ DSU::DSU(int n) {
 }
 
 int DSU::find(int v) {
+    BENCH_INC(uf_finds);
     int root = v;
     while (rep[root] != root) {
         root = rep[root];
+        BENCH_INC(uf_find_steps);
     }
     while (rep[v] != v) {
         int next = rep[v];
