@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
     vector<int> label(n);
     iota(label.begin(), label.end(), 0);
     shuffle(label.begin(), label.end(), rng);
+    swap(*find(label.begin(), label.end(), 0), label[0]);
 
     vector<pair<int, int>> edges;
     for (int i = 0; i + 1 < n; i++) {
