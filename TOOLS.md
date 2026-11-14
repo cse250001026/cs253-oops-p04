@@ -11,4 +11,4 @@
 **Deepak (Claude Code, 11 Nov 2026)**
 - "review the pr requests on cse253 oops repo and let me know are there any bugs or mismatches"
 - "complete the part to not commit anything"
-
+| Gemini(4 Argon), Oct–Nov 2026 | Sufiyan Ahmad (Architect, D3) | Designing shared graph header (`include/graph.hpp`) and `INTERFACE.md`; drafting `app/block_cut_tree.hpp`, `app/app.cpp`, `app/run_ops.cpp`, and formatting the D3 derivation in LaTeX | `include/graph.hpp`, `INTERFACE.md`, `app/`, `oracle/invarient_checks.hpp`, `REPORT.md`, `docs/derivations/D3_250001068.pdf` | Verified `BlockCutTree` invariants and `separates(v, x, y)` against brute-force BFS in `check_bct_invariants`; tested `bin/app` and `bin/run_ops` with `make test`. |
