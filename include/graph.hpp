@@ -65,7 +65,7 @@ class StructAResult {
 public:
     vector<int> articulation_points;       // Sorted ascending vertex IDs
     vector<int> bridge_ids;                // Sorted ascending edge IDs
-    vector<Edge> bridges;                  // Sorted canonical Edge objects
+    vector<Edge> bridges;                  // bridges[i] == edges[bridge_ids[i]] (edge-ID order)
     vector<vector<int>> bcc_edge_ids;      // Each BCC as a list of edge IDs
     vector<vector<int>> bcc_vertices;      // Each BCC as sorted unique vertex IDs
     vector<int> components_after_removal;  // Size V: total graph components if v is deleted
@@ -75,7 +75,7 @@ public:
 class StructBResult {
 public:
     vector<int> bridge_ids;                // Sorted ascending edge IDs
-    vector<Edge> bridges;                  // Sorted canonical Edge objects
+    vector<Edge> bridges;                  // bridges[i] == edges[bridge_ids[i]] (edge-ID order)
     vector<vector<int>> two_eccs;          // 2-edge-connected components (sorted vertex IDs)
 };
 
@@ -85,7 +85,7 @@ public:
     int initial_components = 0;            // C_0: connected components in original graph
     vector<int> articulation_points;       // Sorted ascending vertex IDs
     vector<int> bridge_ids;                // Sorted ascending edge IDs
-    vector<Edge> bridges;                  // Sorted canonical Edge objects
+    vector<Edge> bridges;                  // bridges[i] == edges[bridge_ids[i]] (edge-ID order)
     vector<int> components_after_removal;  // Size V: total graph components if v is deleted
 };
 
