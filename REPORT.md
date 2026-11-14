@@ -32,7 +32,10 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - …
 
 **Mayank Gupta (Structure B):** PRs [#8](https://github.com/cse250001026/cs253-oops-p04/pull/8), [#10](https://github.com/cse250001026/cs253-oops-p04/pull/10), [#12](https://github.com/cse250001026/cs253-oops-p04/pull/12).
-- …
+- Iterative DFS forest construction (`DFSForest.cpp`) with explicit heap stack and edge index pointers, preventing call stack overflow on deep paths up to $V = 100,000$ ([#8](https://github.com/cse250001026/cs253-oops-p04/pull/8)).
+- Custom Disjoint Set Union (`DSU.cpp`) with two-pass path compression, union-by-rank, and `highest[]` depth tracking to preserve $O(\alpha(V))$ set operations while accessing shallowest path vertices ([#10](https://github.com/cse250001026/cs253-oops-p04/pull/10)).
+- Fundamental cycle path marking (`makeCyclePath.cpp`), ID-ordered bridge extraction, and 2-ECC component grouping (`union_find_bridges.cpp`) ([#8](https://github.com/cse250001026/cs253-oops-p04/pull/8), [#12](https://github.com/cse250001026/cs253-oops-p04/pull/12)).
+- Operation counter instrumentation matching analytical cost models (`BENCH_*`), invariant test harness (`tests/test_structB.cpp`), and D2 derivation document.
 
 **Sufiyan Ahmad (Architect):** PRs [#2](https://github.com/cse250001026/cs253-oops-p04/pull/2), [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5).
 - …
@@ -125,35 +128,141 @@ than the textbook version:
 
 ## 5. Structure B: bridges by union-find path marking
 
-> **TO FILL: Mayank** · 2–3 pages
-> Code: `src/structB/DFSForest.cpp` (`buildDFSForest`), `DSU.cpp` (`find`, `unite`, `get_highest`), `makeCyclePath.cpp` (`markCyclePath`), `union_find_bridges.cpp` (`UnionFindBridgeSolver::solve`).
+Structure B computes the bridges and 2-edge-connected components (2-ECCs) of an undirected graph using an iterative Depth-First Search (DFS) spanning forest combined with a custom Disjoint Set Union (DSU) path-marking mechanism. The core theoretical premise is that an edge in an undirected graph is a bridge if and only if it does not lie on any simple cycle. In a DFS spanning forest, non-tree edges are exclusively back-edges between an ancestor and a descendant, each forming a fundamental cycle with the vertical tree path between its endpoints. By marking all tree edges on these fundamental cycles and contracting already-marked paths via union-find, unmarked tree edges are identified as bridges in $O((V + E)\,\alpha(V))$ total time.
+
+The implementation is modularly structured across four translation units in `src/structB/`:
+- `DFSForest.hpp` / `DFSForest.cpp`: Iterative DFS spanning forest construction (`buildDFSForest`).
+- `DSU.hpp` / `DSU.cpp`: Disjoint Set Union with path compression, union-by-rank, and minimum-depth metadata tracking (`find`, `unite`, `get_highest`).
+- `makeCyclePath.hpp` / `makeCyclePath.cpp`: Cycle path marking along vertical tree paths (`markCyclePath`).
+- `union_find_bridges.hpp` / `union_find_bridges.cpp`: Bridge detection and 2-ECC grouping coordinator (`UnionFindBridgeSolver::solve`).
 
 ### 5.1 Representation
-> The DFS forest arrays (`parent`, `depth`, `parentEdge`, `isTreeEdge`), the DSU (`rep`, `rank`, `highest`), `marked`, and the second DSU used for 2-edge-connected components.
+
+Structure B uses contiguous, cache-friendly flat arrays (`vector<int>` and `vector<bool>`) avoiding any heap reallocations during graph traversal and set operations.
+
+1. **DFS Forest Arrays (`DFSForest` in `src/structB/DFSForest.hpp`)**:
+   - `parent` (`vector<int>`, size $V$): Stores the immediate tree parent of each vertex $v$ in the DFS forest. Initialized to $-1$; DFS roots retain $-1$.
+   - `depth` (`vector<int>`, size $V$): Stores the unweighted distance (hop count) from the root of $v$'s DFS tree to $v$. Roots have depth $0$. Used to orient non-tree edges vertically and terminate path marking.
+   - `parentEdge` (`vector<int>`, size $V$): Stores the unique edge ID $e \in [0, E-1]$ connecting $v$ to $\text{parent}[v]$. Roots store $-1$. This enables $O(1)$ edge identification without scanning adjacency lists.
+   - `isTreeEdge` (`vector<bool>`, size $E$): A boolean bitset marking whether edge ID $e$ is a tree edge ($e \in E_T$) or a non-tree edge ($e \in E \setminus E_T$).
+
+2. **Cycle Path Marking Disjoint Set Union (`DSU` in `src/structB/DSU.hpp`)**:
+   - `rep` (`vector<int>`, size $V$): The parent pointer for DSU trees, flattened during `find(v)` via two-pass path compression.
+   - `rank` (`vector<int>`, size $V$): The rank (upper bound on tree height) of each set representative, incremented only when uniting two sets of equal rank (union-by-rank).
+   - `highest` (`vector<int>`, size $V$): Auxiliary metadata array storing the vertex of strictly minimum DFS depth in the equivalence class of root $r$:
+     $$\text{highest}[r] = \arg\min_{w \in \text{Set}(r)} \text{depth}[w]$$
+     This field allows union-by-rank to choose the root arbitrarily while always preserving immediate access to the shallowest vertex in the contracted component via `get_highest(v) = highest[find(v)]`.
+
+3. **Cycle Edge Marker (`marked` in `src/structB/union_find_bridges.cpp`)**:
+   - `marked` (`vector<bool>`, size $E$): Boolean array initialized to `false`. An edge $e$ is marked `true` when it is traversed during cycle path ascent. An edge is a bridge if and only if `isTreeEdge[e] && !marked[e]`.
+
+4. **Second Disjoint Set Union for 2-ECC Grouping (`ecc_dsu` in `src/structB/union_find_bridges.cpp`)**:
+   - A distinct instance of `DSU` initialized with size $V$, used after bridge identification to contract all non-bridge, non-self-loop edges and partition $V$ into 2-edge-connected components.
+
+**Memory Footprint.** Across the entire execution on $V = 100,000$ and $E = 1,000,000$:
+- DFS forest: $3 \times 4\text{ B} \times V + E / 8\text{ B} \approx 1.2\text{ MB} + 125\text{ KB} \approx 1.33\text{ MB}$.
+- Marking DSU: $3 \times 4\text{ B} \times V \approx 1.2\text{ MB}$.
+- Markers & stack: $E / 8\text{ B} + 4\text{ B} \times V \approx 125\text{ KB} + 400\text{ KB} \approx 0.53\text{ MB}$.
+- 2-ECC DSU: $3 \times 4\text{ B} \times V \approx 1.2\text{ MB}$ (allocated after marking).
+Total auxiliary memory is under $4.5\text{ MB}$, well within typical L3 CPU cache capacities.
 
 ### 5.2 Operations and their complexity
-> | Step | What it does | Cost |
-> |------|--------------|------|
-> | Build the DFS forest | … | O(V + E) |
-> | Mark each non-tree edge's cycle path | … | O((V + E) α(V)) |
-> | Collect bridges, group 2-ECCs | … | |
+
+The solver executes in four distinct sequential steps:
+
+| Step | What it does | Implementation | Cost |
+|------|--------------|----------------|------|
+| **1. Build DFS Forest** | Explores all components using an explicit heap-allocated vector stack `st` and per-vertex adjacency edge index pointers `edge_idx[v]`. Records `parent`, `depth`, `parentEdge`, and sets `isTreeEdge[id] = true` for tree edges. | `buildDFSForest(g)` in `DFSForest.cpp` | $O(V + E)$ |
+| **2. Mark Cycle Paths** | Scans all $E$ edges. For each non-tree edge $e = (u, v)$ ($u \neq v$), calls `markCyclePath`. Ascends the tree path from the deeper endpoint to the shallower endpoint using `dsu.get_highest(v)` to jump over already-contracted cycles, setting `marked[parentEdge[x]] = true` and uniting $x$ with $\text{parent}[x]$. | `markCyclePath(...)` in `makeCyclePath.cpp` | $O((V + E)\,\alpha(V))$ |
+| **3. Collect Bridges** | Iterates over all edge IDs $0 \dots E-1$. An edge is collected into `result.bridge_ids` and `result.bridges` iff `isTreeEdge[id] && !marked[id]`. Emitted in increasing ID order. | Loop 4 in `union_find_bridges.cpp` | $O(E)$ |
+| **4. Group 2-ECCs** | Initializes `ecc_dsu(V)`. Unites endpoints of all non-bridge, non-loop edges. Groups vertices into `result.two_eccs` in a single pass over $0 \dots V-1$, preserving sorted vertex order and canonical component ordering. | Loop 5 in `union_find_bridges.cpp` | $O((V + E)\,\alpha(V))$ |
+| **Total** | Full bridge detection and 2-edge-connected component decomposition. | `UnionFindBridgeSolver::solve(g)` | $\mathbf{O((V + E)\,\alpha(V))}$ |
+
+#### Detailed Complexity Breakdown of Path Marking
+1. **At most $V - C - b$ `unite` calls:** Each call to `dsu.unite(x, p, depth)` merges two previously distinct components along an unmarked tree edge. Because the DFS forest contains exactly $V - C$ tree edges (where $C$ is the number of connected components) and each bridge is never united, the inner loop marks and unites an edge at most $V - C - b \le V - 1$ times across the entire algorithm.
+2. **At most $2(V + E)$ `find` calls:** In `markCyclePath`, each while-loop step evaluates `dsu.get_highest(v)` (one `find`). If $\text{depth}[x] > \text{depth}[u]$, a tree edge is marked and `dsu.unite(x, p, depth)` is invoked (two `find`s inside `unite`). If $\text{depth}[x] \le \text{depth}[u]$, the loop terminates. The terminating check happens at most once per non-tree edge ($\le E$ times). Thus, the total number of `find` operations across all non-tree edges is bounded by $3(V - C - b) + E = O(V + E)$.
+3. **Amortized Bound:** By Tarjan's Theorem (1975), any sequence of $m'$ operations on $n$ elements using union-by-rank and two-pass path compression runs in $O(m' \alpha(n))$ time. Setting $m' = O(V + E)$ and $n = V$ yields $O((V + E)\,\alpha(V))$ total time. Since $\alpha(V) \le 4$ for all practical inputs ($V \le 10^{80}$), this behaves as strictly linear time in practice.
 
 ### 5.3 Invariants maintained
-> Each DSU set is a connected piece of the DFS tree whose internal edges are all marked; `highest[root]` is its shallowest vertex.
+
+The correctness of Structure B rests upon three invariant properties maintained throughout the algorithm:
+
+1. **Cycle Contraction Invariant (2-ECC Subgraphs)**:
+   At any point during the execution of `markCyclePath`, every disjoint set in `dsu` corresponds to a connected subgraph of vertices in the DFS forest connected entirely by tree edges that have already been marked on at least one cycle. All vertices within the same DSU set are mutually 2-edge-connected in the subgraph of examined edges.
+
+2. **Minimum Depth Invariant (`highest`)**:
+   For every valid root $r = \text{find}(w)$ of a DSU component, $\text{highest}[r]$ strictly points to the vertex with the minimum DFS depth in that component:
+   $$\text{depth}[\text{highest}[r]] = \min_{v \in \text{Set}(r)} \text{depth}[v]$$
+   - *Base Case:* Initially, each vertex $v$ forms its own singleton set with $\text{highest}[v] = v$, where $\text{depth}[v]$ is trivially minimal.
+   - *Inductive Step:* When `unite(u, v, depth)` merges sets with roots $r_u$ and $r_v$, the winner root $r_{\text{new}}$ is chosen by rank. Regardless of which root wins, the algorithm explicitly sets:
+     $$\text{highest}[r_{\text{new}}] = \begin{cases} \text{highest}[r_u] & \text{if } \text{depth}[\text{highest}[r_u]] < \text{depth}[\text{highest}[r_v]] \\ \text{highest}[r_v] & \text{otherwise} \end{cases}$$
+     Since $\text{parent}[x]$ always has depth $\text{depth}[x] - 1$, depth tracking is strictly monotonically decreasing as the path ascends.
+
+3. **Single Traversal and Jump Invariant**:
+   Whenever a tree edge $e = (x, \text{parent}[x])$ is marked, $x$ is immediately united with $\text{parent}[x]$. For any subsequent non-tree edge whose fundamental cycle contains $x$, `dsu.get_highest(x)` jumps directly to $\text{parent}[x]$ or one of its ancestors in $O(\alpha(V))$ time, bypassing $e$. Thus, no tree edge is ever examined, marked, or united more than once.
+
+4. **Bridge and Partition Invariants (INTERFACE.md §3, checked in `tests/test_structB.cpp`)**:
+   - *Bridge Equivalence:* $\text{structB.bridge\_ids} == \text{structA.bridge\_ids}$ on all inputs up to $V = 100,000$.
+   - *2-ECC Partition:* `two_eccs` forms a complete disjoint partition of $\{0, 1, \dots, V-1\}$ with $\sum |C_i| = V$, each component sorted ascending, ordered by minimum vertex ID.
+   - *Bridge Crossing Invariant:* Every bridge connects two distinct 2-ECCs ($comp[u] \neq comp[v]$).
+   - *Non-Bridge Invariant:* Every non-bridge, non-self-loop edge connects vertices within the same 2-ECC ($comp[u] == comp[v]$).
+   - *Reachability Equivalence:* Connected components in $G \setminus \text{Bridges}$ match `two_eccs` identically.
 
 ### 5.4 Design decisions and rejected alternatives
-> | Decision | Alternative rejected | Why |
-> |----------|----------------------|-----|
-> | `highest[]` with union by rank | Linking straight to the parent's set | Only O(log V) per find (bug log, entry 4) |
-> | `bridges` in `bridge_ids` order | Sorting by endpoints | Broke `bridges[i] == edges[bridge_ids[i]]` (bug log, entry 7) |
-> | | | |
+
+| Decision | Alternative rejected | Why |
+|----------|----------------------|-----|
+| **`highest[]` metadata with union-by-rank** | Linking directly to the parent's set (`rep[x] = find(parent[x])`) | Directly setting `rep[x] = parent[x]` forces tree edges to point upward, which prevents union-by-rank. Without union-by-rank, path compression alone degrades worst-case find operations to $O(\log V)$ amortized (or $O(V)$ without full compression), failing the project's $O((V+E)\alpha(V))$ complexity requirement (bug log entry 4). Decoupling the DSU root choice (governed by `rank`) from the shallowest vertex (tracked by `highest[]`) achieves true $O(\alpha(V))$ amortized complexity while allowing instantaneous jumps to the path top. |
+| **Iterative DFS with explicit stack and adjacency pointers** | Recursive DFS (`void dfs(u)`) | On long path graphs ($V = 100,000$), recursion stack depth reaches $10^5$ frames ($\approx 3.2\text{ MB}$ to $8\text{ MB}$ of stack memory), exceeding typical thread stack limits ($2\text{ MB}$ on Windows/Linux) and triggering `SIGSEGV` segmentation faults. The iterative implementation maintains an explicit heap `vector<int> st` and a `vector<int> edge_idx` cursor array, safely scaling to $V = 100,000$ and $E = 1,000,000$. |
+| **Preserving `bridges` in sequential `bridge_ids` order** | Sorting `bridges` by endpoint pairs using `Edge::operator<` | `Edge::operator<` sorts by $(u, v)$ lexicographically. If bridge edge IDs are not monotonic with endpoint order (e.g. edge 0 = (2,3), edge 1 = (0,1)), sorting `bridges` caused `bridges[i] != g.edges[bridge_ids[i]]`, failing invariant checks and disagreeing with Structure A in 1,218 out of 5,000 random graphs (bug log entry 7). Emitting bridges directly in loop order $0 \dots E-1$ guarantees that `bridges` and `bridge_ids` remain 1-to-1 synchronized. |
+| **Early self-loop filtering in DFS and path marking** | Allowing self-loops into adjacency lists or path marking | Self-loops ($u = v$) do not affect connectivity and can never be bridges. `Graph::add_edge` excludes them from `adj[][]`, and `markCyclePath` explicitly skips $u = v$, avoiding wasted DSU operations and ensuring $E' = E - L$ bounds are strictly observed. |
+| **Independent second DSU pass for 2-ECC grouping** | Contracting bridges on the path-marking DSU | Attempting to reuse the cycle-marking DSU to produce 2-ECCs requires rolling back or re-routing components. A dedicated second pass over non-bridge edges with `ecc_dsu` runs in just $O((V+E)\alpha(V))$ and provides an isolated, deterministic, and canonically ordered partition. |
 
 ## 6. The requirement beyond the lecture
 
 ### 6.1 Bridges by union-find path marking
 
-> **TO FILL: Mayank** · about ½–1 page
-> What the reading says (Tarjan 1974, "A note on finding the bridges of a graph"; Tarjan 1975 for the union-find bound), how `markCyclePath` implements it, and where your implementation differs from the paper.
+#### Theoretical Foundation: Tarjan (1974) and Tarjan (1975)
+In his 1974 paper, *"A note on finding the bridges of a graph"* [3], Robert E. Tarjan demonstrated that bridge detection can be formulated as fundamental cycle detection on a spanning tree combined with disjoint-set path compression. When a depth-first search explores an undirected graph $G = (V, E)$, it partitions edges into a spanning forest $F = (V, E_T)$ and a set of back-edges $E \setminus E_T$, each connecting an ancestor $u$ and descendant $v$ in $F$.
+
+Every back-edge $(u, v)$ induces a unique *fundamental cycle* consisting of the back-edge itself and the vertical tree path $P_T(u, v)$ in $F$. A fundamental graph-theoretic property is that an edge $e \in E$ is a bridge if and only if $e$ does not lie on any simple cycle. Because every cycle in $G$ can be expressed as a symmetric difference of fundamental cycles, an edge is a bridge if and only if it is a tree edge that does not belong to any fundamental cycle.
+
+Tarjan observed that rather than computing lowpoint values recursively as in his 1972 linear-time algorithm [1], one can iteratively traverse and mark the tree path $P_T(u, v)$ for each back-edge $(u, v)$, while using a disjoint-set union (union-find) data structure to contract already-traversed paths. Once a tree edge is marked, its endpoints are united into an equivalence class. When subsequent back-edges traverse the tree, the union-find structure allows the algorithm to skip directly over already-contracted segments in amortized near-constant time.
+
+In his companion 1975 paper, *"Efficiency of a good but not linear set union algorithm"* [4], Tarjan established the tight theoretical complexity of the disjoint-set union data structure. He proved that an intermixed sequence of $m'$ `find` and `unite` operations on $n$ elements using both path compression and union-by-rank (or union-by-size) requires at most $O(m' \alpha(m', n))$ time, where $\alpha$ is the functional inverse of Ackermann's function. Since the path-marking algorithm performs at most $V - 1$ unions (each unmarked tree edge is united at most once) and at most $O(V + E)$ finds (each non-tree back-edge incurs at most one non-uniting find before terminating), the total execution time of path marking is strictly bounded by $O((V + E) \alpha(V))$.
+
+#### Implementation: `markCyclePath`
+The cycle path marking mechanism is implemented in `markCyclePath` (`src/structB/makeCyclePath.cpp`). Given a non-tree edge $(u, v)$ with $\text{depth}[u] < \text{depth}[v]$:
+1. The search begins at the deeper endpoint $v$. The algorithm queries `curr = dsu.get_highest(v)`, which performs `find(v)` with two-pass path compression to retrieve the root representative, followed by indexing `highest[root]` to obtain the vertex of strictly minimum DFS depth in $v$'s equivalence class.
+2. While $\text{depth}[curr] > \text{depth}[u]$:
+   - The immediate tree parent of $curr$ is retrieved via $p = \text{forest.parent}[curr]$.
+   - The tree edge connecting $curr$ and $p$ is marked as belonging to a cycle: `marked[forest.parentEdge[curr]] = true`.
+   - The sets containing $curr$ and $p$ are united via `dsu.unite(curr, p, forest.depth)`.
+   - The algorithm advances up the tree: `curr = dsu.get_highest(curr)`.
+3. As soon as $\text{depth}[curr] \le \text{depth}[u]$, the path has ascended to or above the shallow ancestor $u$. All tree edges on the fundamental cycle are now marked, and the loop terminates.
+
+Because each unmarked tree edge is traversed and contracted at most once, and each edge is examined at most once per non-tree edge, the work amortizes to $O((V + E) \alpha(V))$. Tree edges that remain unmarked after all non-tree edges are processed are collected as bridges in a single $O(E)$ pass.
+
+#### Differences from Tarjan's Original Paper
+Structure B departs from Tarjan's original 1974 formulation in three key design aspects:
+
+1. **Decoupling Rank from Depth (`highest[]` Metadata vs. Naive Parent Pointers)**:
+   In Tarjan (1974), the representative of a contracted set was proposed to be the root-ward (shallowest) vertex by simply pointing the representative of the descendant set to the ancestor representative (`rep[v] = rep[p]`). While conceptually straightforward, forcing tree edges to always point upward strictly forbids union-by-rank. Without rank balancing, path compression alone yields an amortized complexity of $O(\log V)$ per operation on pathological inputs (or $O(V)$ in non-compressed variants), violating the required $O((V + E)\alpha(V))$ bound (recorded in Bug Log entry 4).
+   Structure B resolves this tension by strictly decoupling the DSU tree balance from the DFS tree geometry:
+   - Set roots and parent pointers in `rep[]` are merged purely according to `rank[]` (union-by-rank), preserving Tarjan's (1975) inverse Ackermann bound.
+   - An independent metadata array `highest[r]` tracks the vertex with minimal `depth` across all members of root $r$'s equivalence class. During `unite(u, v, depth)`, `highest` for the winning root is assigned the endpoint with minimum DFS depth.
+   This guarantees both balanced DSU trees ($O(\alpha(V))$ amortized operations) and instantaneous jumping to the highest ancestor in the contracted component via `get_highest(v) = highest[find(v)]`.
+
+2. **Iterative Heap Stack vs. Recursive Traversal**:
+   Tarjan (1974) assumed a standard recursive DFS traversal. On deep graphs such as long path graphs ($V = 100,000$), call-frame overhead causes stack memory exhaustion and segmentation faults on systems with standard $2\text{ MB}$ stack limits. Structure B implements an explicit heap-allocated vector stack `vector<int> st` and per-vertex adjacency cursor pointers `edge_idx` (`DFSForest.cpp`), supporting arbitrary graph topologies up to $V = 100,000$ safely.
+
+3. **Multi-Phase Architecture vs. Interleaved Traversal**:
+   Tarjan's paper describes path marking online during DFS backtracking. Structure B decouples the computation into distinct sequential phases:
+   - *Phase 1:* Spanning forest construction (`buildDFSForest`).
+   - *Phase 2:* Batch path marking over non-tree edges (`markCyclePath`).
+   - *Phase 3:* Bridge collection preserving original edge ID ordering ($0 \dots E-1$).
+   - *Phase 4:* Partitioning into 2-edge-connected components via an independent DSU instance (`ecc_dsu`).
+   This separation guarantees that edge ID ordering is strictly preserved (avoiding discrepancy with Structure A's bridge order, bug log entry 7), keeps each algorithmic phase testable in isolation, and allows direct hardware cache profiling without entangled state.
 
 ### 6.2 Block-cut tree and the separation query
 
