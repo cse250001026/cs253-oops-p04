@@ -1,4 +1,4 @@
-date: 2026-11-15T00:33:57+05:30
+date: 2026-11-15T01:23:02+05:30
 pinned_cpu: 2
 governor: powersave
 kernel: 7.2.14-arch1-1
@@ -19,7 +19,7 @@ Core(s) per socket:                      14
 Socket(s):                               1
 Stepping:                                1
 Microcode version:                       0x137
-CPU(s) scaling MHz:                      35%
+CPU(s) scaling MHz:                      37%
 CPU max MHz:                             4900.0000
 CPU min MHz:                             800.0000
 BogoMIPS:                                5606.40
