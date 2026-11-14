@@ -116,14 +116,6 @@ All modules communicate through the header `include/graph.hpp` and adhere to the
 | **Oracle agreement ($V \le 5000$):** `articulation_points`, `bridge_ids`, and `components_after_removal` match brute-force BFS vertex/edge deletion | Structure A, Structure B, Oracle | `oracle/differential_test.cpp` (`compare`), `tests/oracle_tests.cpp` (`chk`), `tests/test_structA.cpp` (`verifyOracle`) |
 | **Block-cut tree bipartite, acyclic & query equivalence:** every BCT edge joins one C-node and one B-node, each BCT component with $n_C$ C-nodes and $n_B$ B-nodes has $n_C + n_B - 1$ edges, and `separates(v, x, y)` matches BFS reachability in $G \setminus \{v\}$ | Application (`BlockCutTree`) | `oracle/invarient_checks.hpp` (`check_bct_invariants`) |
 
-### 3.1 Common interface
-
-### 3.2 Structural invariants
-
-| Invariant | Holds for | Checked by (file, function) |
-|-----------|-----------|-----------------------------|
-| | | |
-
 ## 4. Structure A: iterative Tarjan low-link DFS
 
 > **TO FILL: Chetna** · 2–3 pages

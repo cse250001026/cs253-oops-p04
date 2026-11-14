@@ -45,10 +45,8 @@ inline bool check_graph_invariants(const Graph& g) {
 
 inline bool check_bct_invariants(const Graph& g, const StructAResult& a_res, const BlockCutTree& bct) {
     // 1. Bipartite invariant: C-nodes are [0 .. num_cuts-1], B-nodes are [num_cuts .. total_nodes-1]
-    long long deg_sum = 0;
     for (int u = 0; u < bct.total_nodes; u++) {
         bool u_is_cut = (u < bct.num_cuts);
-        deg_sum += bct.adj[u].size();
         for (int w : bct.adj[u]) {
             if (w < 0 || w >= bct.total_nodes) return false;
             bool w_is_cut = (w < bct.num_cuts);
