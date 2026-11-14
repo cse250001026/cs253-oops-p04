@@ -1,14 +1,3 @@
-# Project 04: Critical Nodes and Links in a Network (team Oops)
-#
-#   make              build every program into bin/
-#   make test         unit tests, invariant checks, and the differential test
-#                     (10^6 operations, seed 20260928); ends with ALL TESTS PASSED
-#   make bench        run every experiment, writing results/raw/
-#   make cache        perf cache profile, writing results/raw/cache_profile.csv
-#   make figures      redraw results/figures/ from results/raw/
-#   make all-results  build, test, measure and plot (scripts/run_all.sh)
-#   make clean        remove bin/
-
 CXX      ?= g++
 CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra
 BIN      := bin
