@@ -1,0 +1,145 @@
+V,E,seed,structure,solves,event,count
+2000,10000,20262928,none,6,cpu_atom/cycles/u,<not counted>
+2000,10000,20262928,none,6,cpu_core/cycles/u,5406479
+2000,10000,20262928,none,6,cpu_atom/instructions/u,<not counted>
+2000,10000,20262928,none,6,cpu_core/instructions/u,8843923
+2000,10000,20262928,none,6,cpu_atom/L1-dcache-loads/u,<not counted>
+2000,10000,20262928,none,6,cpu_core/L1-dcache-loads/u,2156215
+2000,10000,20262928,none,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+2000,10000,20262928,none,6,cpu_core/L1-dcache-load-misses/u,107121
+2000,10000,20262928,none,6,cpu_atom/LLC-loads/u,<not counted>
+2000,10000,20262928,none,6,cpu_core/LLC-loads/u,3186
+2000,10000,20262928,none,6,cpu_atom/LLC-load-misses/u,<not counted>
+2000,10000,20262928,none,6,cpu_core/LLC-load-misses/u,1617
+2000,10000,20262928,A,6,cpu_atom/cycles/u,1741057
+2000,10000,20262928,A,6,cpu_core/cycles/u,11162552
+2000,10000,20262928,A,6,cpu_atom/instructions/u,1308767
+2000,10000,20262928,A,6,cpu_core/instructions/u,20279419
+2000,10000,20262928,A,6,cpu_atom/L1-dcache-loads/u,324384
+2000,10000,20262928,A,6,cpu_core/L1-dcache-loads/u,5950095
+2000,10000,20262928,A,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+2000,10000,20262928,A,6,cpu_core/L1-dcache-load-misses/u,310248
+2000,10000,20262928,A,6,cpu_atom/LLC-loads/u,3930
+2000,10000,20262928,A,6,cpu_core/LLC-loads/u,3892
+2000,10000,20262928,A,6,cpu_atom/LLC-load-misses/u,464
+2000,10000,20262928,A,6,cpu_core/LLC-load-misses/u,1074
+2000,10000,20262928,B,6,cpu_atom/cycles/u,2410113
+2000,10000,20262928,B,6,cpu_core/cycles/u,14427403
+2000,10000,20262928,B,6,cpu_atom/instructions/u,1596139
+2000,10000,20262928,B,6,cpu_core/instructions/u,32640629
+2000,10000,20262928,B,6,cpu_atom/L1-dcache-loads/u,395610
+2000,10000,20262928,B,6,cpu_core/L1-dcache-loads/u,7924424
+2000,10000,20262928,B,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+2000,10000,20262928,B,6,cpu_core/L1-dcache-load-misses/u,238913
+2000,10000,20262928,B,6,cpu_atom/LLC-loads/u,4779
+2000,10000,20262928,B,6,cpu_core/LLC-loads/u,4410
+2000,10000,20262928,B,6,cpu_atom/LLC-load-misses/u,1077
+2000,10000,20262928,B,6,cpu_core/LLC-load-misses/u,1062
+20000,100000,20280928,none,6,cpu_atom/cycles/u,7874234
+20000,100000,20280928,none,6,cpu_core/cycles/u,43166463
+20000,100000,20280928,none,6,cpu_atom/instructions/u,5250272
+20000,100000,20280928,none,6,cpu_core/instructions/u,64680967
+20000,100000,20280928,none,6,cpu_atom/L1-dcache-loads/u,1301368
+20000,100000,20280928,none,6,cpu_core/L1-dcache-loads/u,15572562
+20000,100000,20280928,none,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+20000,100000,20280928,none,6,cpu_core/L1-dcache-load-misses/u,1337873
+20000,100000,20280928,none,6,cpu_atom/LLC-loads/u,16022
+20000,100000,20280928,none,6,cpu_core/LLC-loads/u,263086
+20000,100000,20280928,none,6,cpu_atom/LLC-load-misses/u,4949
+20000,100000,20280928,none,6,cpu_core/LLC-load-misses/u,5335
+20000,100000,20280928,A,6,cpu_atom/cycles/u,16161743
+20000,100000,20280928,A,6,cpu_core/cycles/u,110477682
+20000,100000,20280928,A,6,cpu_atom/instructions/u,12352203
+20000,100000,20280928,A,6,cpu_core/instructions/u,144382339
+20000,100000,20280928,A,6,cpu_atom/L1-dcache-loads/u,3061702
+20000,100000,20280928,A,6,cpu_core/L1-dcache-loads/u,43460206
+20000,100000,20280928,A,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+20000,100000,20280928,A,6,cpu_core/L1-dcache-load-misses/u,4402090
+20000,100000,20280928,A,6,cpu_atom/LLC-loads/u,36124
+20000,100000,20280928,A,6,cpu_core/LLC-loads/u,860454
+20000,100000,20280928,A,6,cpu_atom/LLC-load-misses/u,4495
+20000,100000,20280928,A,6,cpu_core/LLC-load-misses/u,6031
+20000,100000,20280928,B,6,cpu_atom/cycles/u,18032522
+20000,100000,20280928,B,6,cpu_core/cycles/u,133857666
+20000,100000,20280928,B,6,cpu_atom/instructions/u,12807054
+20000,100000,20280928,B,6,cpu_core/instructions/u,258539296
+20000,100000,20280928,B,6,cpu_atom/L1-dcache-loads/u,3174137
+20000,100000,20280928,B,6,cpu_core/L1-dcache-loads/u,62585598
+20000,100000,20280928,B,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+20000,100000,20280928,B,6,cpu_core/L1-dcache-load-misses/u,4960161
+20000,100000,20280928,B,6,cpu_atom/LLC-loads/u,36217
+20000,100000,20280928,B,6,cpu_core/LLC-loads/u,626985
+20000,100000,20280928,B,6,cpu_atom/LLC-load-misses/u,6120
+20000,100000,20280928,B,6,cpu_core/LLC-load-misses/u,4254
+100000,500000,20360928,none,6,cpu_atom/cycles/u,40426673
+100000,500000,20360928,none,6,cpu_core/cycles/u,266970381
+100000,500000,20360928,none,6,cpu_atom/instructions/u,27912081
+100000,500000,20360928,none,6,cpu_core/instructions/u,301836234
+100000,500000,20360928,none,6,cpu_atom/L1-dcache-loads/u,6917807
+100000,500000,20360928,none,6,cpu_core/L1-dcache-loads/u,72598848
+100000,500000,20360928,none,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+100000,500000,20360928,none,6,cpu_core/L1-dcache-load-misses/u,7960256
+100000,500000,20360928,none,6,cpu_atom/LLC-loads/u,83588
+100000,500000,20360928,none,6,cpu_core/LLC-loads/u,3891967
+100000,500000,20360928,none,6,cpu_atom/LLC-load-misses/u,24721
+100000,500000,20360928,none,6,cpu_core/LLC-load-misses/u,145150
+100000,500000,20360928,A,6,cpu_atom/cycles/u,74213126
+100000,500000,20360928,A,6,cpu_core/cycles/u,775598704
+100000,500000,20360928,A,6,cpu_atom/instructions/u,51934146
+100000,500000,20360928,A,6,cpu_core/instructions/u,699531307
+100000,500000,20360928,A,6,cpu_atom/L1-dcache-loads/u,11522787
+100000,500000,20360928,A,6,cpu_core/L1-dcache-loads/u,211139452
+100000,500000,20360928,A,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+100000,500000,20360928,A,6,cpu_core/L1-dcache-load-misses/u,24919600
+100000,500000,20360928,A,6,cpu_atom/LLC-loads/u,178545
+100000,500000,20360928,A,6,cpu_core/LLC-loads/u,13560753
+100000,500000,20360928,A,6,cpu_atom/LLC-load-misses/u,11505
+100000,500000,20360928,A,6,cpu_core/LLC-load-misses/u,583471
+100000,500000,20360928,B,6,cpu_atom/cycles/u,157181157
+100000,500000,20360928,B,6,cpu_core/cycles/u,968855717
+100000,500000,20360928,B,6,cpu_atom/instructions/u,111796239
+100000,500000,20360928,B,6,cpu_core/instructions/u,1262718974
+100000,500000,20360928,B,6,cpu_atom/L1-dcache-loads/u,27709249
+100000,500000,20360928,B,6,cpu_core/L1-dcache-loads/u,305527620
+100000,500000,20360928,B,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+100000,500000,20360928,B,6,cpu_core/L1-dcache-load-misses/u,32820838
+100000,500000,20360928,B,6,cpu_atom/LLC-loads/u,320564
+100000,500000,20360928,B,6,cpu_core/LLC-loads/u,9801502
+100000,500000,20360928,B,6,cpu_atom/LLC-load-misses/u,50976
+100000,500000,20360928,B,6,cpu_core/LLC-load-misses/u,661255
+100000,1000000,20360928,none,6,cpu_atom/cycles/u,72539052
+100000,1000000,20360928,none,6,cpu_core/cycles/u,429006773
+100000,1000000,20360928,none,6,cpu_atom/instructions/u,44267959
+100000,1000000,20360928,none,6,cpu_core/instructions/u,501350799
+100000,1000000,20360928,none,6,cpu_atom/L1-dcache-loads/u,10971497
+100000,1000000,20360928,none,6,cpu_core/L1-dcache-loads/u,120080506
+100000,1000000,20360928,none,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+100000,1000000,20360928,none,6,cpu_core/L1-dcache-load-misses/u,13460411
+100000,1000000,20360928,none,6,cpu_atom/LLC-loads/u,141297
+100000,1000000,20360928,none,6,cpu_core/LLC-loads/u,6568404
+100000,1000000,20360928,none,6,cpu_atom/LLC-load-misses/u,59585
+100000,1000000,20360928,none,6,cpu_core/LLC-load-misses/u,418997
+100000,1000000,20360928,A,6,cpu_atom/cycles/u,254952399
+100000,1000000,20360928,A,6,cpu_core/cycles/u,1431324150
+100000,1000000,20360928,A,6,cpu_atom/instructions/u,160691099
+100000,1000000,20360928,A,6,cpu_core/instructions/u,1256313063
+100000,1000000,20360928,A,6,cpu_atom/L1-dcache-loads/u,39824203
+100000,1000000,20360928,A,6,cpu_core/L1-dcache-loads/u,383580241
+100000,1000000,20360928,A,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+100000,1000000,20360928,A,6,cpu_core/L1-dcache-load-misses/u,41295994
+100000,1000000,20360928,A,6,cpu_atom/LLC-loads/u,501633
+100000,1000000,20360928,A,6,cpu_core/LLC-loads/u,22667243
+100000,1000000,20360928,A,6,cpu_atom/LLC-load-misses/u,161339
+100000,1000000,20360928,A,6,cpu_core/LLC-load-misses/u,1895274
+100000,1000000,20360928,B,6,cpu_atom/cycles/u,251008558
+100000,1000000,20360928,B,6,cpu_core/cycles/u,1495989009
+100000,1000000,20360928,B,6,cpu_atom/instructions/u,173058903
+100000,1000000,20360928,B,6,cpu_core/instructions/u,2300101893
+100000,1000000,20360928,B,6,cpu_atom/L1-dcache-loads/u,42891394
+100000,1000000,20360928,B,6,cpu_core/L1-dcache-loads/u,553735083
+100000,1000000,20360928,B,6,cpu_atom/L1-dcache-load-misses/u,<not supported>
+100000,1000000,20360928,B,6,cpu_core/L1-dcache-load-misses/u,52815333
+100000,1000000,20360928,B,6,cpu_atom/LLC-loads/u,462111
+100000,1000000,20360928,B,6,cpu_core/LLC-loads/u,13136882
+100000,1000000,20360928,B,6,cpu_atom/LLC-load-misses/u,69809
+100000,1000000,20360928,B,6,cpu_core/LLC-load-misses/u,1523456
