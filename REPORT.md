@@ -1,5 +1,181 @@
-# REPORT
+# Project 04: Critical Nodes and Links in a Network: Report
+
+Team Oops · CS 253 / MA 253 · cs253-oops-p04
+
+<!--
+HOW TO FILL THIS REPORT (delete this comment before the final tag)
+- Each section starts with a "TO FILL" box naming its owner. Write only in your own sections.
+- Replace the box with your text when you are done. Keep the section and sub-section headings.
+- Write in your own words. Text from a paper, website or AI tool must be quoted and cited (guidelines 4.4),
+  and AI use must also be declared in TOOLS.md.
+- Give numbers with units, and sizes as exact values or powers of ten.
+- Work on a branch, commit with the prefix "report:", and open a PR. Deadline: Sunday 15 Nov, 20:00.
+- Before the final tag, `grep -n "TO FILL" REPORT.md` must print nothing.
+Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs and do not count.
+-->
+
+## 1. Team and contributions
+
+| Name | Roll no. | GitHub | Role | Module folder | Derivation |
+|------|----------|--------|------|---------------|------------|
+| Chetna Mundra | 250001024 | @cse250001024 | Structure A owner | `src/structA/` | D1 |
+| Mayank Gupta | 250001047 | @cse250001047-MG | Structure B owner | `src/structB/` | D2 |
+| Sufiyan Ahmad | 250001068 | @Sufiyan-cse-250001068 | Architect | `app/` | D3 |
+| Shubham Sharma | 250051017 | @ep250051017-shubham | Oracle owner | `oracle/` | D4 |
+| Raunak Kumar Singh | 250001060 | @cse250001060-collab | Adversary | `adversary/` | D5 |
+| Deepak Chahar | 250001026 | @cse250001026 | Analyst | `bench/` | D6 |
+
+> **TO FILL: every member, in your own row below** · ½ page in total
+> Three or four bullets on what you built, each linked to the commit or PR that added it. The PRs already merged are listed for you; add any that follow.
+
+**Chetna Mundra (Structure A):** PRs [#9](https://github.com/cse250001026/cs253-oops-p04/pull/9), [#14](https://github.com/cse250001026/cs253-oops-p04/pull/14), [#17](https://github.com/cse250001026/cs253-oops-p04/pull/17).
+- …
+
+**Mayank Gupta (Structure B):** PRs [#8](https://github.com/cse250001026/cs253-oops-p04/pull/8), [#10](https://github.com/cse250001026/cs253-oops-p04/pull/10), [#12](https://github.com/cse250001026/cs253-oops-p04/pull/12).
+- …
+
+**Sufiyan Ahmad (Architect):** PRs [#2](https://github.com/cse250001026/cs253-oops-p04/pull/2), [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5).
+- …
+
+**Shubham Sharma (Oracle):** PRs [#4](https://github.com/cse250001026/cs253-oops-p04/pull/4), [#7](https://github.com/cse250001026/cs253-oops-p04/pull/7), [#13](https://github.com/cse250001026/cs253-oops-p04/pull/13).
+- …
+
+**Raunak Kumar Singh (Adversary):** PR [#16](https://github.com/cse250001026/cs253-oops-p04/pull/16), and the generators PR (merge [`7e9c107`](https://github.com/cse250001026/cs253-oops-p04/commit/7e9c107)).
+- …
+
+**Deepak Chahar (Analyst):** PRs [#1](https://github.com/cse250001026/cs253-oops-p04/pull/1), [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6), and the cost-model and harness PR.
+- …
+
+## 2. Problem
+
+A network is an undirected graph of nodes and links, and we want to know where it is fragile. A node is
+**critical** (an *articulation point*) if removing it splits the network into more connected pieces than
+before. A link is critical (a *bridge*) if removing it does the same. The graph also splits into
+*biconnected components*: the largest groups of links in which any two links lie on a common cycle, so no single node failure
+separates them. A bridge forms a component of its own.
+
+The project must compute all three for a network of 100,000 nodes, and support two uses on top of them:
+
+- **A robustness report** that ranks the critical nodes by how many connected pieces the network falls
+  into when each one fails.
+- **A query service** that answers "if node v fails, is x cut off from y?". It uses a *block-cut tree*
+  built from the biconnected components, and answers each query from DFS entry and exit times on that tree.
+
+Two independent methods must find the same bridges. Structure A uses Tarjan's low-link DFS and also produces
+the articulation points and biconnected components. Structure B marks cycle edges on a DFS tree, using
+union-find to skip edges already marked. A brute-force oracle removes each node and each link in turn and counts
+the pieces by BFS. Both structures must agree with it exactly on every graph small enough for it
+(up to about 5,000 nodes).
+
+**Scale.** We worked at the course's full scale for graph projects, 10^5 vertices and 10^6 edges, and
+measured A, B and the oracle for V from 10^3 to 10^5. At this size, three things make the problem harder
+than the textbook version:
+
+- **Recursion depth.** A recursive DFS overflows the call stack on a path of 10^5 vertices, so both
+  structures must be iterative.
+- **The DFS root.** The root needs its own rule, and leaving it out gives wrong answers only on particular
+  graphs.
+- **Messy inputs.** The graphs may contain parallel links, self-loops, isolated nodes and several
+  disconnected parts, and every module must handle each case in the same way.
+
+## 3. Interface and invariants
+
+> **TO FILL: Sufiyan** · 1 page
+> Taken from INTERFACE.md, not copied wholesale. Summarise:
+> - the shared `Graph` (vertices 0…V−1, edges with IDs, adjacency of (vertex, edge ID) pairs, self-loops stored but kept out of the adjacency lists) and the rules for parallel edges, self-loops, isolated vertices and disconnected graphs;
+> - the four APIs: `TarjanSolver::solve`, `UnionFindBridgeSolver::solve`, `BfsOracle::solve` and the block-cut tree, with what each result holds and in what order;
+> - every structural invariant the checkers test (INTERFACE.md §3), each with the file and function that checks it;
+> - the input formats: the generator graph format and the `run_ops` format.
+
+### 3.1 Common interface
+
+### 3.2 Structural invariants
+
+| Invariant | Holds for | Checked by (file, function) |
+|-----------|-----------|-----------------------------|
+| | | |
+
+## 4. Structure A: iterative Tarjan low-link DFS
+
+> **TO FILL: Chetna** · 2–3 pages
+> Code: `src/structA/tarjan_lowlink.hpp`, `TarjanSolver::solve` (calls `runStructA`).
+
+### 4.1 Representation
+> The arrays kept (`tin`, `low`, `parent`, `parentEdge`, `next`, `separated`, the explicit DFS stack, the edge stack), what each stores, and the memory used.
+
+### 4.2 Operations and their complexity
+> | Step | What it does | Cost |
+> |------|--------------|------|
+> | Iterative DFS with `next[u]` | … | O(V + E) |
+> | Bridges: `low[u] > tin[p]` | … | |
+> | BCCs by popping the edge stack | … | |
+> | Articulation points: `pieces = separated[v] + (parent[v] != -1)` | … | |
+> | `components_after_removal` | … | |
+
+### 4.3 Invariants maintained
+> What holds on the stack and in `low[]` at each step, and why every edge is pushed onto the edge stack exactly once.
+
+### 4.4 Design decisions and rejected alternatives
+> | Decision | Alternative rejected | Why |
+> |----------|----------------------|-----|
+> | Explicit stack | Recursive DFS | Overflows on a 10^5-vertex path |
+> | Skip the parent by edge ID | Skip by parent vertex | … (parallel edges) |
+> | One formula for root and non-root | Separate root test | … |
+> | | | |
+
+## 5. Structure B: bridges by union-find path marking
+
+> **TO FILL: Mayank** · 2–3 pages
+> Code: `src/structB/DFSForest.cpp` (`buildDFSForest`), `DSU.cpp` (`find`, `unite`, `get_highest`), `makeCyclePath.cpp` (`markCyclePath`), `union_find_bridges.cpp` (`UnionFindBridgeSolver::solve`).
+
+### 5.1 Representation
+> The DFS forest arrays (`parent`, `depth`, `parentEdge`, `isTreeEdge`), the DSU (`rep`, `rank`, `highest`), `marked`, and the second DSU used for 2-edge-connected components.
+
+### 5.2 Operations and their complexity
+> | Step | What it does | Cost |
+> |------|--------------|------|
+> | Build the DFS forest | … | O(V + E) |
+> | Mark each non-tree edge's cycle path | … | O((V + E) α(V)) |
+> | Collect bridges, group 2-ECCs | … | |
+
+### 5.3 Invariants maintained
+> Each DSU set is a connected piece of the DFS tree whose internal edges are all marked; `highest[root]` is its shallowest vertex.
+
+### 5.4 Design decisions and rejected alternatives
+> | Decision | Alternative rejected | Why |
+> |----------|----------------------|-----|
+> | `highest[]` with union by rank | Linking straight to the parent's set | Only O(log V) per find (bug log, entry 4) |
+> | `bridges` in `bridge_ids` order | Sorting by endpoints | Broke `bridges[i] == edges[bridge_ids[i]]` (bug log, entry 7) |
+> | | | |
+
+## 6. The requirement beyond the lecture
+
+### 6.1 Bridges by union-find path marking
+
+> **TO FILL: Mayank** · about ½–1 page
+> What the reading says (Tarjan 1974, "A note on finding the bridges of a graph"; Tarjan 1975 for the union-find bound), how `markCyclePath` implements it, and where your implementation differs from the paper.
+
+### 6.2 Block-cut tree and the separation query
+
+> **TO FILL: Sufiyan** · about ½–1 page
+> What the reading says (Harary, Graph Theory, ch. 3), how the block-cut tree is built from Structure A's BCCs, how entry and exit times answer "does v separate x from y" (including when x or y is itself an articulation point), and where your implementation differs.
+
 ## 7. Correctness
+
+### 7.1 The oracle and why it is correct
+
+> **TO FILL: Shubham** · about ½ page
+> `oracle/bfs_oracle.hpp`, `BfsOracle::solve`: remove each vertex and each non-loop edge in turn and count components by BFS. Why this is correct by definition (D4), why edges are removed by ID (parallel edges), why the test is "more than C0" components and not "more than 1", and its cost: O((V + E)^2), since it also removes every edge.
+
+### 7.2 Differential test
+
+> **TO FILL: Shubham** · about ½ page
+> `oracle/differential_test.cpp`: what one operation is, the graph sizes, the seed (20260928), the result at 10^5 and 10^6 operations, and how a failure is shrunk to a minimal edge sequence (`oracle/failure_shrinker.cpp`).
+
+### 7.3 Invariant checkers
+
+> **TO FILL: Shubham** · about ½ page
+> Each checker and what it tests: `tests/test_structA.cpp` (`verifyBccInvariants`), `tests/test_structB.cpp` (`verifyStructBInvariants`), `tests/oracle_tests.cpp`. Say how they are run (`make test`) and whether the differential test calls them.
 
 ### 7.4 Bug log
 
@@ -32,7 +208,25 @@ No wrong-answer bug was found in Structure A's algorithm: from its first commit 
 Structure B, including on 20,000 random graphs with parallel edges, self-loops and disconnected parts. Owners should
 add any bug they found and fixed before committing, with the date, how it was found and the evidence.
 
+## 8. Adversarial inputs
+
+> **TO FILL: Raunak (construction and argument), Deepak (measured effect)** · 1–2 pages
+> One sub-section per target. Raunak: the command, how the generator builds the graph, and the worst-case argument (D5). Deepak: the measured effect, from `results/raw/adversarial.csv` and `results/figures/fig5_adversarial.png`.
+
+### 8.1 Graphs where only the root rule decides the answer (`gen_root`, six modes)
+
+### 8.2 A long simple cycle (`gen_cycle`)
+
+### 8.3 Cliques joined at one vertex (`gen_cliques`)
+
+### 8.4 Paths deep enough to overflow a recursive DFS (`gen_path`, `gen_root path`)
+> Say which input, compiler flags and stack size actually overflow a recursive DFS (bug log, entry 8).
+
+### 8.5 Parallel edges and self-loops (`gen_multi`, beyond the named targets)
+
 ## 9. Predicted cost model
+
+The model below was written before any measurement. The first draft was committed at c1 in [`d6d6456`](https://github.com/cse250001026/cs253-oops-p04/commit/d6d6456) (10 Oct 2026); the final model was committed in [`5ff34df`](https://github.com/cse250001026/cs253-oops-p04/commit/5ff34df) (14 Nov 2026), before any file in `results/raw/`.
 
 ### 9.1 Asymptotic model
 
@@ -164,3 +358,41 @@ Predicted:
 - **Data:** `bench/run_benchmarks.sh` writes `results/raw/<experiment>.csv`,
   and `bench/plot_results.py` draws `results/figures/`. Both run from
   `scripts/run_all.sh`.
+
+## 11. Results
+
+> **TO FILL: Deepak** · 3–5 pages
+> Each figure with a caption saying what to notice, the script and raw file that made it, and the predicted curve on the same axes. Explain every gap between prediction and measurement.
+
+### 11.1 Scaling of A and B (`fig1_time_vs_V.png`, `fig2_ns_per_edge.png`)
+
+### 11.2 The oracle (`fig3_oracle.png`)
+
+### 11.3 B against A (`fig4_B_over_A.png`)
+
+### 11.4 Full scale: V = 10^5, E = 10^6 (`results/raw/fullscale.csv`)
+
+### 11.5 Adversarial inputs (`fig5_adversarial.png`)
+
+### 11.6 Operation counts against prediction (`table_counters.md`)
+
+### 11.7 Cache behaviour (`fig6_cache_misses.png`, perf output in `results/raw/cache_profile.csv`)
+
+## 12. Limitations
+
+> **TO FILL: Deepak, with one line from each member** · ½ page
+> What does not work, what you would do differently, and what you would measure next. Each member adds one honest line about their module.
+
+## 13. References
+
+> **TO FILL: every member** · as needed
+> Add every paper, book, web page or tool you used, in the same style. The project's reading list is already here.
+
+1. R. E. Tarjan, "Depth-first search and linear graph algorithms," *SIAM Journal on Computing* 1(2):146–160, 1972.
+2. J. Hopcroft and R. E. Tarjan, "Algorithm 447: Efficient algorithms for graph manipulation," *Communications of the ACM* 16(6):372–378, 1973.
+3. R. E. Tarjan, "A note on finding the bridges of a graph," *Information Processing Letters* 2(6):160–161, 1974.
+4. R. E. Tarjan, "Efficiency of a good but not linear set union algorithm," *Journal of the ACM* 22(2):215–225, 1975.
+5. J. M. Schmidt, "A simple test on 2-vertex- and 2-edge-connectivity," *Information Processing Letters* 113(7):241–244, 2013.
+6. F. Harary, *Graph Theory*, Addison-Wesley, 1969, Chapter 3.
+7. T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*, 3rd ed., MIT Press, 2009, Problem 22-2.
+8. Tools: g++, Linux `perf`, Python and matplotlib; AI tools as declared in [TOOLS.md](TOOLS.md).
