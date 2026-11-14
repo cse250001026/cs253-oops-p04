@@ -2,6 +2,7 @@
 #define TARJAN_LOWLINK_HPP
 
 #include "../../include/graph.hpp"
+#include "../../bench/counters.hpp"
 
 inline StructAResult runStructA(const Graph& g) {
     int n = g.V, m = g.E;
@@ -18,7 +19,9 @@ inline StructAResult runStructA(const Graph& g) {
         if (tin[root] != -1) continue;
         ++components;
         tin[root] = low[root] = timer++;
+        BENCH_INC(vertices_visited);
         dfs.push_back(root);
+        BENCH_MAX(max_stack_depth, dfs.size());
 
         while (!dfs.empty()) {
             int u = dfs.back();
@@ -46,6 +49,7 @@ inline StructAResult runStructA(const Graph& g) {
             }
 
             AdjEdge e = g.adj[u][next[u]++];
+            BENCH_INC(half_edges_scanned);
             int v = e.to;
             if (e.id == parentEdge[u]) continue; // Important for parallel edges.
 
@@ -53,11 +57,15 @@ inline StructAResult runStructA(const Graph& g) {
                 parent[v] = u;
                 parentEdge[v] = e.id;
                 tin[v] = low[v] = timer++;
+                BENCH_INC(vertices_visited);
                 edgeStack.push_back(e.id);
+                BENCH_INC(edge_stack_pushes);
                 dfs.push_back(v);
+                BENCH_MAX(max_stack_depth, dfs.size());
             } else if (tin[v] < tin[u]) { // Back edge to ancestor.
                 low[u] = min(low[u], tin[v]);
                 edgeStack.push_back(e.id);
+                BENCH_INC(edge_stack_pushes);
             }
         }
     }
