@@ -47,7 +47,6 @@ StructBResult UnionFindBridgeSolver::solve(const Graph& g) {
             result.bridges.push_back(g.edges[id]);
         }
     }
-    sort(result.bridges.begin(), result.bridges.end());
 
     // 5. Compute 2-Edge-Connected Components (2-ECCs)
     // Non-bridge edges connect vertices within the same 2-ECC.
