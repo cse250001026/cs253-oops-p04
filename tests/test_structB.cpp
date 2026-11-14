@@ -23,7 +23,7 @@
  *  3. stressTests(): Scaled tests up to V = 100,000 and E = 1,000,000.
  *
  * Compilation:
- *   g++ -O2 -std=c++14 tests/test_structB.cpp src/structB/*.cpp -o bin/test_structB
+ *   g++ -O2 -std=c++17 tests/test_structB.cpp src/structB/<file>.cpp -o bin/test_structB
  */
 
 #include "../src/structB/union_find_bridges.hpp"

@@ -1,5 +1,6 @@
 #include "DFSForest.hpp"
 #include <vector>
+#include "../../bench/counters.hpp"
 
 using namespace std;
 
@@ -22,7 +23,9 @@ DFSForest buildDFSForest(const Graph& g) {
         if (visited[root]) continue;
 
         visited[root] = true;
+        BENCH_INC(vertices_visited);
         st.push_back(root);
+        BENCH_MAX(max_stack_depth, st.size());
 
         while (!st.empty()) {
             int v = st.back();
@@ -33,16 +36,19 @@ DFSForest buildDFSForest(const Graph& g) {
             }
 
             const AdjEdge& e = g.adj[v][edge_idx[v]++];
+            BENCH_INC(half_edges_scanned);
             int u = e.to;
             int id = e.id;
 
             if (!visited[u]) {
                 visited[u] = true;
+                BENCH_INC(vertices_visited);
                 res.parent[u] = v;
                 res.depth[u] = res.depth[v] + 1;
                 res.parentEdge[u] = id;
                 res.isTreeEdge[id] = true;
                 st.push_back(u);
+                BENCH_MAX(max_stack_depth, st.size());
             }
         }
     }

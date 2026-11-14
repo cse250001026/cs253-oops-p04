@@ -1,5 +1,6 @@
 #include "makeCyclePath.hpp"
 #include <utility>
+#include "../../bench/counters.hpp"
 using namespace std;
 
 void markCyclePath(
@@ -31,6 +32,7 @@ void markCyclePath(
         // The edge from x to its parent lies on the cycle.
         if (parentEdge[x] != -1) {
             marked[parentEdge[x]] = true;
+            BENCH_INC(uf_unions);
         }
 
         // Skip processed tree edge by uniting x's component with parent[x]'s
