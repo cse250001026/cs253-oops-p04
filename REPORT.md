@@ -38,7 +38,7 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - Operation counter instrumentation matching analytical cost models (`BENCH_*`), invariant test harness (`tests/test_structB.cpp`), and D2 derivation document.
 
 **Sufiyan Ahmad (Architect):** PRs [#2](https://github.com/cse250001026/cs253-oops-p04/pull/2), [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5).
-- Designed the shared graph representation (`include/graph.hpp`) and common API specifications (`INTERFACE.md`) for `Graph`, `AdjEdge`, `Edge`, `StructAResult`, `StructBResult`, `OracleResult`, and `NodeRobustness` ([#2](https://github.com/cse250001026/cs253-oops-p04/pull/2), [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5)).
+- Designed the shared graph representation (`include/graph.hpp`) and common API specifications (`INTERFACE.md`) for `Graph`, `AdjEdge`, `Edge`, `StructAResult`, `StructBResult`, `OracleResult`, and `NodeRobustness` ([#26](https://github.com/cse250001026/cs253-oops-p04/pull/26), [#27](https://github.com/cse250001026/cs253-oops-p04/pull/27)).
 - Implemented the Block-Cut Forest construction, Euler-tour timestamping (`tin`/`tout`), separation query engine (`separates(v, x, y)`), and node robustness ranking in `app/block_cut_tree.hpp`.
 - Built the application driver (`app/app.cpp`), hidden-test evaluation driver (`app/run_ops.cpp`), Block-Cut Tree invariant verifier (`check_bct_invariants` in `oracle/invarient_checks.hpp`), and D3 derivation (`docs/derivations/D3_250001068.pdf`).
 - …
