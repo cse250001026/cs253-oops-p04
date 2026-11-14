@@ -44,6 +44,7 @@ mkdir -p bin
 
 g++ -std=c++17 -O2 -Wall -Wextra \
     oracle/differential_test.cpp \
+    oracle/failure_shrinker.cpp \
     src/structB/DFSForest.cpp \
     src/structB/DSU.cpp \
     src/structB/makeCyclePath.cpp \
@@ -58,3 +59,26 @@ A successful 100,000-operation run should print:
 DIFFERENTIAL TEST PASSED: 100000 operations, seed 20260928
 
 The existing oracle-specific tests are in tests/oracle_tests.cpp. They include hand-written graphs and 2,000 random multigraphs compared with an independent recursive Tarjan reference.
+
+3. Faliure Shrinker 
+The failure shrinker is used to reduce the size of a graph when the differential test finds a mismatch.
+
+It is automatically called when a failure occurs. It tries removing one edge addition at a time and checks whether the same mismatch still exists. If it does, the edge is permanently removed, and the process continues until no more edges can be removed.
+
+The reduced graph and the remaining edges are printed along with the original failure details.
+
+This makes it easier to understand and debug a failing case instead of checking a large random graph.
+
+
+4. invarient_checks.hpp
+his file checks whether the graph representation follows the rules defined in INTERFACE.md.
+The check_graph_invariants(const Graph& g) function checks:
+
+The adjacency list and edge counts are consistent with the graph.
+All vertices and edge IDs are valid.
+
+Every non-self-loop edge appears exactly once in the adjacency list of each endpoint.
+Self-loops are stored in edges but not in adj.
+Parallel edges are handled separately using their unique edge IDs.
+
+The check is called before comparing the three algorithms in the differential test. If an invariant fails, the test reports graph_invariants.

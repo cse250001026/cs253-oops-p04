@@ -5,8 +5,12 @@ using namespace std;
 #include "../src/structB/union_find_bridges.hpp"
 #include "bfs_oracle.hpp"
 #include "failure_shrinker.hpp"
+#include "invarient_checks.hpp"
 
 string compare(const Graph& g) {
+    if (!check_graph_invariants(g))
+        return "graph_invariants";
+        
     StructAResult a = runStructA(g);
     StructBResult b = UnionFindBridgeSolver::solve(g);
     OracleResult o = BfsOracle::solve(g);
