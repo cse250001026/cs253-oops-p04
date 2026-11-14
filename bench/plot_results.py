@@ -11,6 +11,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator, FuncFormatter, NullLocator
 
 COLOR = {"A": "#2a78d6", "B": "#eb6834", "oracle": "#1baf7a"}
 LABEL = {"A": "A (Tarjan low-link)", "B": "B (union-find marking)", "oracle": "Oracle (BFS)"}
@@ -122,17 +123,19 @@ def fig_ns_per_edge(summary, full, out_dir):
                     ax.errorbar([fV], [v], yerr=[x["sd"] * 1e6 / (fV + fE)], color=COLOR[s], marker="s",
                                 markerfacecolor="white", capsize=2, linestyle="none",
                                 label=f"{s}: full scale (V = 10⁵, E = 10⁶)")
-    for limit, text in ((L2_BYTES, "working set > L2\n(1.25 MiB)"), (L3_BYTES, "working set > L3\n(24 MiB)")):
+    for limit, text, ha in ((L2_BYTES, "working set > L2\n(1.25 MiB)", "left"),
+                            (L3_BYTES, "working set > L3\n(24 MiB)", "right")):
         v = limit / BYTES_PER_VERTEX
         ax.axvline(v, color=MUTED, linestyle=":", linewidth=1)
-        ax.text(v * 1.05, top * 1.33, text, color=INK2, fontsize=7.5, va="top")
+        ax.text(v * 1.05 if ha == "left" else v / 1.05, top * 1.33, text, color=INK2, fontsize=7.5,
+                va="top", ha=ha)
     ax.set_xscale("log")
     ax.set_xlim(left=700, right=max(130000, ax.get_xlim()[1]))
     ax.set_ylim(0, top * 1.4 if top else 1)
     ax.set_xlabel("vertices V (log scale; E = 5V)")
     ax.set_ylabel("time per (V + E) (ns)")
     ax.set_title("Time per vertex-plus-edge: predicted flat while cache-resident")
-    ax.legend(loc="lower right", fontsize=7.5)
+    ax.legend(loc="upper left", bbox_to_anchor=(1.01, 1.0), fontsize=7.5)
     footnote(fig, "Data: results/raw/scaling.csv, results/raw/fullscale.csv · bench/plot_results.py · "
                   "mean ± 1 sd of 5 runs · cache limits from REPORT.md §9.3 (≈240 B per vertex)")
     save(fig, out_dir, "fig2_ns_per_edge.png")
@@ -152,6 +155,9 @@ def fig_oracle(summary, out_dir):
                 marker="o", capsize=2, label="Oracle (BFS): measured")
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.xaxis.set_major_locator(FixedLocator(Vs))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:,.0f}"))
+    ax.xaxis.set_minor_locator(NullLocator())
     ax.set_xlabel("vertices V (log scale; E = 5V)")
     ax.set_ylabel("time per solve (ms, log scale)")
     ax.set_title("Oracle running time against its absolute prediction")
@@ -214,38 +220,47 @@ def fig_adversarial(rows, out_dir):
 def fig_cache(rows, out_dir):
     totals = defaultdict(float)
     solves = {}
+    pmus = defaultdict(set)
     for r in rows:
         try:
             count = float(r["count"])
         except ValueError:
-            continue
+            continue  # <not counted> or <not supported>, e.g. the E-core counters of a pinned run
+        V, E, s = int(r["V"]), int(r["E"]), r["structure"]
         base = r["event"].split("/")[-2] if r["event"].count("/") >= 2 else r["event"]
         base = base.split(":")[0]
-        key = (int(r["V"]), int(r["E"]), r["structure"], base)
-        totals[key] += count
-        solves[(int(r["V"]), int(r["E"]))] = int(r["solves"])
-    sizes = sorted(solves)
+        totals[(V, E, s, base)] += count
+        solves[(V, E, s)] = int(r["solves"])  # solves added on top of the "none" run
+        if count:
+            pmus[(V, E, s)].add(r["event"].split("/")[0] if r["event"].count("/") >= 2 else "")
+    if any(len(p) > 1 for p in pmus.values()):
+        print("warning: cache_profile.csv has counts from both core types (cpu_core and cpu_atom); "
+              "rerun bench/cache_profile.sh so that perf runs pinned to one core", file=sys.stderr)
+    sizes = sorted({(V, E) for (V, E, s), n in solves.items() if s in ("A", "B") and n > 0})
     if not sizes:
         return
     fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.6))
-    for ax, event, label in ((axes[0], "L1-dcache-load-misses", "L1d load misses per edge"),
-                             (axes[1], "LLC-load-misses", "LLC load misses per edge")):
+    for ax, event, label in ((axes[0], "L1-dcache-load-misses", "L1 data cache"),
+                             (axes[1], "LLC-load-misses", "Last-level cache (L3)")):
         w = 0.38
         for i, s in enumerate(("A", "B")):
             vals = []
             for (V, E) in sizes:
+                n = solves.get((V, E, s), 0)
                 net = totals.get((V, E, s, event), 0) - totals.get((V, E, "none", event), 0)
-                vals.append(max(net, 0) / solves[(V, E)] / E)
+                vals.append(max(net, 0) / n / E if n else 0)
             ax.bar([k + (i - 0.5) * (w + 0.03) for k in range(len(sizes))], vals, width=w, color=COLOR[s],
                    label=LABEL[s])
         ax.set_xticks(range(len(sizes)))
         ax.set_xticklabels([f"V={V:,}\nE={E:,}" for V, E in sizes], fontsize=7)
         ax.grid(axis="x", visible=False)
         ax.set_title(label)
+        ax.set_xlabel("random graph size")
+        ax.set_ylabel("load misses per edge, per solve")
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=2, fontsize=8, bbox_to_anchor=(0.5, 1.06))
-    footnote(fig, "Data: results/raw/cache_profile.csv (perf stat, user space) · bench/plot_results.py · "
-                  "graph construction subtracted via --structures none")
+    footnote(fig, "Data: results/raw/cache_profile.csv (perf stat, user space, one P-core) · bench/plot_results.py · "
+                  "(run − 'none' run) ÷ solves column ÷ E")
     fig.tight_layout()
     save(fig, out_dir, "fig6_cache_misses.png")
 
