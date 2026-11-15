@@ -21,6 +21,9 @@ string compare(const Graph& g) {
     if (a.bridge_ids != b.bridge_ids || a.bridge_ids != o.bridge_ids) return "bridge_ids";
     if (a.components_after_removal != o.components_after_removal) return "components_after_removal";
 
+    BlockCutTree bct;
+    bct.build(g, a);
+    if (!check_bct_invariants(g, a, bct)) return "bct_invariants";
     return "";
 }
 

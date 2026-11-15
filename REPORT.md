@@ -38,6 +38,9 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - Operation counter instrumentation matching analytical cost models (`BENCH_*`), invariant test harness (`tests/test_structB.cpp`), and D2 derivation document.
 
 **Sufiyan Ahmad (Architect):** PRs [#2](https://github.com/cse250001026/cs253-oops-p04/pull/2), [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5).
+- Designed the shared graph representation (`include/graph.hpp`) and common API specifications (`INTERFACE.md`) for `Graph`, `AdjEdge`, `Edge`, `StructAResult`, `StructBResult`, `OracleResult`, and `NodeRobustness` ([#26](https://github.com/cse250001026/cs253-oops-p04/pull/26), [#27](https://github.com/cse250001026/cs253-oops-p04/pull/27)).
+- Implemented the Block-Cut Forest construction, Euler-tour timestamping (`tin`/`tout`), separation query engine (`separates(v, x, y)`), and node robustness ranking in `app/block_cut_tree.hpp`.
+- Built the application driver (`app/app.cpp`), hidden-test evaluation driver (`app/run_ops.cpp`), Block-Cut Tree invariant verifier (`check_bct_invariants` in `oracle/invarient_checks.hpp`), and D3 derivation (`docs/derivations/D3_250001068.pdf`).
 - …
 
 **Shubham Sharma (Oracle):** PRs [#4](https://github.com/cse250001026/cs253-oops-p04/pull/4), [#7](https://github.com/cse250001026/cs253-oops-p04/pull/7), [#13](https://github.com/cse250001026/cs253-oops-p04/pull/13).
@@ -83,20 +86,35 @@ than the textbook version:
 
 ## 3. Interface and invariants
 
-> **TO FILL: Sufiyan** · 1 page
-> Taken from INTERFACE.md, not copied wholesale. Summarise:
-> - the shared `Graph` (vertices 0…V−1, edges with IDs, adjacency of (vertex, edge ID) pairs, self-loops stored but kept out of the adjacency lists) and the rules for parallel edges, self-loops, isolated vertices and disconnected graphs;
-> - the four APIs: `TarjanSolver::solve`, `UnionFindBridgeSolver::solve`, `BfsOracle::solve` and the block-cut tree, with what each result holds and in what order;
-> - every structural invariant the checkers test (INTERFACE.md §3), each with the file and function that checks it;
-> - the input formats: the generator graph format and the `run_ops` format.
-
 ### 3.1 Common interface
+
+All modules communicate through the header `include/graph.hpp` and adhere to the contract established in `INTERFACE.md` before implementation began.
+
+- **Graph representation (`class Graph`):** An undirected multigraph with $V$ vertices labelled $0, 1, \dots, V - 1$ and $E$ edges labelled $0, 1, \dots, E - 1$ in insertion order. Each call to `g.add_edge(u, v)` appends a canonical `Edge(min(u, v), max(u, v), id)` to `g.edges`. If $u \neq v$, it appends `AdjEdge(v, id)` to `g.adj[u]` and `AdjEdge(u, id)` to `g.adj[v]`.
+- **Edge-case conventions:**
+  - *Parallel edges:* Stored as distinct entries in `edges` and `adj` with unique `id` values. Traversals skip the tree-parent edge by comparing `e.id == parentEdge[u]` rather than `e.to == parent[u]`, so parallel edges form two-edge cycles and are never misclassified as bridges.
+  - *Self-loops ($u = v$):* Stored in `g.edges` to keep edge IDs contiguous in $[0, E - 1]$, but omitted from `g.adj` because a loop from a vertex to itself cannot belong to a simple cycle or alter connectivity.
+  - *Disconnected graphs and isolated vertices:* Let $C_0$ be the initial number of connected components. Removing vertex $v$ leaves `components_after_removal[v]` components among the remaining $V - 1$ vertices. A vertex $v$ is an articulation point iff `components_after_removal[v] > C_0`. Removing an isolated vertex decreases the component count to $C_0 - 1$, so isolated vertices are never articulation points.
+- **Module APIs:**
+  - `TarjanSolver::solve(const Graph& g) -> StructAResult` (`src/structA/tarjan_lowlink.hpp`): Returns `articulation_points` (sorted ascending vertex IDs), `bridge_ids` (sorted ascending edge IDs), `bridges` (`Edge` objects in `bridge_ids` order), `bcc_edge_ids` (non-loop edges partitioned into biconnected components, sorted internally and ordered by smallest edge ID), `bcc_vertices` (sorted unique vertices per BCC), and `components_after_removal` (size $V$).
+  - `UnionFindBridgeSolver::solve(const Graph& g) -> StructBResult` (`src/structB/union_find_bridges.hpp`): Returns `bridge_ids` (sorted ascending), `bridges` (in `bridge_ids` order), and `two_eccs` (disjoint partition of $\{0, \dots, V - 1\}$ into 2-edge-connected components, each sorted ascending and ordered by smallest vertex ID).
+  - `BfsOracle::solve(const Graph& g) -> OracleResult` (`oracle/bfs_oracle.hpp`): Returns `initial_components` ($C_0$), `articulation_points`, `bridge_ids`, `bridges`, and `components_after_removal` by brute-force BFS deletion.
+  - `BlockCutTree` (`app/block_cut_tree.hpp`): `build(g, a_res)` constructs the bipartite Block-Cut Forest in $O(V + E)$ time; `separates(v, x, y)` answers whether removing $v$ disconnects $x$ and $y$ using DFS entry/exit timestamps; `get_robustness_ranking()` returns vertices sorted descending by `total_components_after` (ties broken by smaller vertex ID).
+- **Input and evaluation formats:**
+  - *Generator / benchmark format:* Header line `V E` followed by `E` lines of `u v` ($0 \le u, v < V$).
+  - *Evaluation interface (`./bin/run_ops --structure A|B < ops.txt > out.txt`):* Reads `V E` and `E` edges, followed either by EOF (printing standard summary blocks `ARTICULATION_POINTS`, `BRIDGES`, `BCCS` / `TWO_ECCS`) or by explicit query tokens (`AP`, `BRIDGES`, `BCCS`, `TWO_ECCS`, `ROBUSTNESS`, `SEPARATES v x y`).
 
 ### 3.2 Structural invariants
 
 | Invariant | Holds for | Checked by (file, function) |
 |-----------|-----------|-----------------------------|
-| | | |
+| **Graph symmetry & ID integrity:** `edges.size() == E`, `adj.size() == V`, `0 <= edges[id].u <= edges[id].v < V`, non-loop edge `id` appears once in `adj[u]` and once in `adj[v]`, self-loops excluded from `adj` | `Graph` | `oracle/invarient_checks.hpp` (`check_graph_invariants`), `tests/test_structB.cpp` (`verifyGraphInvariants`) |
+| **Root & non-root cut rules:** root $r \in \text{AP} \iff \text{children}(r) \ge 2$; non-root $u \in \text{AP} \iff \exists$ child $v$ with $\text{low}[v] \ge \text{tin}[u]$; removal count matches $C_0 - 1 + \text{pieces}(v)$ | Structure A | `tests/test_structA.cpp` (`verifyOracle`), `oracle/differential_test.cpp` (`compare`) |
+| **BCC edge partition:** every non-loop edge belongs to exactly one BCC ($\sum |BCC_i| = E'$), edge IDs and vertex lists sorted with no duplicates, BCCs ordered by minimum edge ID | Structure A | `tests/test_structA.cpp` (`verifyBccInvariants`) |
+| **Cross-structure bridge equivalence:** `structA.bridge_ids == structB.bridge_ids` and `bridges[i] == g.edges[bridge_ids[i]]` across all graphs up to $V = 10^5$ | Structure A, Structure B | `tests/test_structB.cpp` (`verifyOracleAndStructA`, `verifyStructBInvariants`), `oracle/differential_test.cpp` (`compare`), `bench/bench.cpp` |
+| **2-ECC partition & reachability:** `two_eccs` partitions $\{0, \dots, V - 1\}$ ($\sum |C_i| = V$), every bridge connects distinct 2-ECCs, every non-bridge non-loop edge stays within one 2-ECC, components match $G \setminus \text{Bridges}$ | Structure B | `tests/test_structB.cpp` (`verifyStructBInvariants`) |
+| **Oracle agreement ($V \le 5000$):** `articulation_points`, `bridge_ids`, and `components_after_removal` match brute-force BFS vertex/edge deletion | Structure A, Structure B, Oracle | `oracle/differential_test.cpp` (`compare`), `tests/oracle_tests.cpp` (`chk`), `tests/test_structA.cpp` (`verifyOracle`) |
+| **Block-cut tree bipartite, acyclic & query equivalence:** every BCT edge joins one C-node and one B-node, each BCT component with $n_C$ C-nodes and $n_B$ B-nodes has $n_C + n_B - 1$ edges, and `separates(v, x, y)` matches BFS reachability in $G \setminus \{v\}$ | Application (`BlockCutTree`) | `oracle/invarient_checks.hpp` (`check_bct_invariants`) |
 
 ## 4. Structure A: iterative Tarjan low-link DFS
 
@@ -266,8 +284,41 @@ Structure B departs from Tarjan's original 1974 formulation in three key design 
 
 ### 6.2 Block-cut tree and the separation query
 
-> **TO FILL: Sufiyan** · about ½–1 page
-> What the reading says (Harary, Graph Theory, ch. 3), how the block-cut tree is built from Structure A's BCCs, how entry and exit times answer "does v separate x from y" (including when x or y is itself an articulation point), and where your implementation differs.
+#### Theoretical Foundation: Harary (1969), Chapter 3
+
+Following Harary (*Graph Theory*, Chapter 3) [6], a *block* of an undirected graph $G$ is a maximal connected subgraph that has no cut-point (articulation point) of its own. Every non-loop edge of $G$ lies in a unique block: two edges belong to the same block if and only if they lie on a common simple cycle, and every bridge forms a two-vertex block of its own. The *block-cutpoint graph* (or *block-cut tree*) of $G$ is the bipartite graph $T = (\mathcal{C} \cup \mathcal{B}, E_T)$ whose vertex set consists of the set of cut-points $\mathcal{C}$ (C-nodes) and the set of blocks $\mathcal{B}$ (B-nodes), where a C-node $c \in \mathcal{C}$ is adjacent to a B-node $B_i \in \mathcal{B}$ if and only if $c \in V(B_i)$ in $G$.
+
+Harary proves two structural properties that form the basis of our query engine (derived formally in D3):
+1. **Acyclicity (Theorem 3.4):** Within every connected component of $G$, the block-cut graph is a tree. If a cycle $B_1 - c_1 - B_2 - c_2 - \dots - B_k - c_k - B_1$ existed in $T$, the union $\bigcup_{i=1}^k B_i$ would be 2-vertex-connected (removing any single vertex leaves the remaining blocks connected along the opposite arc of the cycle), contradicting the maximality of the individual blocks $B_i$.
+2. **Path Separation Characterisation:** Every vertex $u \in V(G)$ with at least one incident non-loop edge maps to a representative node $\text{rep}(u) \in V(T)$: if $u \in \mathcal{C}$, $\text{rep}(u)$ is its C-node $c_u$; otherwise $u$ belongs to a unique block $B(u)$, so $\text{rep}(u) = B(u)$. Removing vertex $v \notin \{x, y\}$ disconnects $x$ from $y$ in $G$ if and only if $v \in \mathcal{C}$ and its C-node $c_v$ lies strictly on the unique simple path between $\text{rep}(x)$ and $\text{rep}(y)$ in $T$—including the boundary cases where $x$ or $y$ is itself an articulation point (so $\text{rep}(x) = c_x$ or $\text{rep}(y) = c_y$).
+
+#### Construction from Structure A's Biconnected Components
+
+In `BlockCutTree::build` (`app/block_cut_tree.hpp`), the Block-Cut Forest is constructed in $O(V + E)$ time directly from `StructAResult`:
+1. The $n_C = |\text{articulation\_points}|$ cut vertices are assigned C-node indices $0, 1, \dots, n_C - 1$, stored in `cut_id[v]` and `rep[v]`.
+2. The $n_B = |\text{bcc\_vertices}|$ blocks are assigned B-node indices $n_C, n_C + 1, \dots, n_C + n_B - 1$.
+3. Iterating over each block $b \in [0, n_B - 1]$ and each vertex $v \in \text{bcc\_vertices}[b]$:
+   - If `cut_id[v] != -1`, an undirected tree edge is added between C-node `cut_id[v]` and B-node $n_C + b$.
+   - Otherwise, $v$ is a non-cut vertex belonging solely to block $b$, and we set `rep[v] = n_C + b`.
+   Since $\sum_b |\text{bcc\_vertices}[b]| \le 2E$, this construction takes $O(V + E)$ time and space.
+
+#### Answering `separates(v, x, y)` via DFS Entry and Exit Timestamps
+
+To answer separation queries without Lowest Common Ancestor (LCA) sparse tables, we run an iterative DFS over each tree of the Block-Cut Forest, recording each node's component ID `comp[u]`, entry timestamp `tin[u]`, exit timestamp `tout[u]`, and ordered list of DFS children `tree_children[u]`. In any rooted DFS tree, node $u$ is an ancestor of node $w$ (`is_sub(u, w)`) if and only if $\text{tin}[u] \le \text{tin}[w]$ and $\text{tout}[w] \le \text{tout}[u]$.
+
+Given a query `separates(v, x, y)`:
+1. **Guard checks:** If $v \in \{x, y\}$, $x = y$, `cut_id[v] == -1`, or $\text{rep}(x)$ and $\text{rep}(y)$ lie in different connected components, return `false` in $O(1)$ time.
+2. **Subtree classification:** Let $c = \text{cut\_id}[v]$, $X = \text{rep}[x]$, and $Y = \text{rep}[y]$. Since $v \notin \{x, y\}$ and C-nodes correspond bijectively to distinct original vertices, $X \neq c$ and $Y \neq c$. We evaluate `x_under = is_sub(c, X)` and `y_under = is_sub(c, Y)` in $O(1)$ time:
+   - **Case 1 (`x_under != y_under`):** Exactly one of $X, Y$ lies inside the DFS subtree of $c$, while the other lies outside. Every path in the tree from inside $c$'s subtree to outside must pass through $c$, so $c$ separates $X$ and $Y$; return `true` in $O(1)$ time.
+   - **Case 2 (`!x_under && !y_under`):** Both $X$ and $Y$ lie outside $c$'s subtree. Because a subtree is convex in a tree, the unique path between $X$ and $Y$ never enters $c$'s subtree; return `false` in $O(1)$ time.
+   - **Case 3 (`x_under && y_under`):** Both $X$ and $Y$ are proper descendants of $c$. In a rooted tree, the path between two proper descendants of $c$ passes through $c$ if and only if they reside in the subtrees of two *different* direct children of $c$. Because the DFS visits `tree_children[c]` sequentially, their timestamp intervals $[\text{tin}[w_i], \text{tout}[w_i]]$ are disjoint and sorted in strictly increasing order. The helper `branch_of(c, X)` binary-searches `tree_children[c]` by `tin`/`tout` in $O(\log(\text{deg}_T(c)))$ time to locate the unique child $w_X$ containing $X$ (and $w_Y$ containing $Y$), returning `w_X != w_Y`.
+
+#### Differences from Harary's Formulation
+
+Harary defines blocks to include isolated vertices and single bridges, and assumes a connected graph without self-loops. Our implementation adapts this to the project's multigraph specification in three ways:
+1. **Block-Cut Forest for Disconnected Multigraphs:** Rather than assuming $G$ is connected, `BlockCutTree` maintains a forest across all connected components, tracking `comp[u]` so queries on disconnected vertex pairs return `false` in $O(1)$ time.
+2. **Isolated Vertices (`rep[v] = -1`):** Structure A defines BCCs strictly as edge-biconnected blocks (`bcc_vertices` is empty for isolated vertices or vertices incident only to self-loops). We assign `rep[v] = -1` to such vertices and recover $C_0$ directly from `components_after_removal[0]` and vertex $0$'s status.
+3. **Iterative Euler-Tour Timestamping:** Just as Structure A and Structure B avoid call-stack recursion, the Block-Cut Tree DFS is implemented iteratively with an explicit heap stack `st` and cursor array `cur_edge`, preventing stack overflow when a path graph of $10^5$ vertices produces a Block-Cut Tree of $199,999$ alternating C-nodes and B-nodes (depth $199,998$).
 
 ## 7. Correctness
 
@@ -491,6 +542,7 @@ Predicted:
 
 > **TO FILL: Deepak, with one line from each member** · ½ page
 > What does not work, what you would do differently, and what you would measure next. Each member adds one honest line about their module.
+- **Block-Cut Tree (`app/`):** When both query endpoints $x$ and $y$ fall inside the DFS subtree of cut vertex $v$, `separates(v, x, y)` binary-searches $v$'s children in $O(\log(\text{deg}_T(v)))$ time; storing a flat Euler tour with a sparse table would make even this case $O(1)$ at the cost of $O(V \log V)$ extra memory.
 
 ## 13. References
 
