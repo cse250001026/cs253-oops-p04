@@ -19,10 +19,15 @@ for pair in "${SIZES[@]}"; do
     read -r V E <<< "$pair"
     seed=$((SEED_BASE + V))
     for s in none A B; do
+        case $s in
+            none) n=0 ;;
+            A)    n=$REPS ;;
+            B)    n=$((REPS + 1)) ;;
+        esac
         echo "perf V=$V E=$E structure=$s" >&2
-        perf stat -x, -e "$EVENTS" -- taskset -c "$CPU" bin/bench --random "$V" "$E" "$seed" \
+        taskset -c "$CPU" perf stat -x, -e "$EVENTS" -- bin/bench --random "$V" "$E" "$seed" \
             --structures "$s" --reps "$REPS" 2>&1 >/dev/null \
-            | awk -F, -v V="$V" -v E="$E" -v seed="$seed" -v s="$s" -v n=$((REPS + 1)) \
+            | awk -F, -v V="$V" -v E="$E" -v seed="$seed" -v s="$s" -v n="$n" \
                 'NF >= 3 && $3 != "" { print V "," E "," seed "," s "," n "," $3 "," $1 }' >> "$out"
     done
 done
