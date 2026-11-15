@@ -9,6 +9,12 @@ else
     echo "run_all: Makefile is empty, skipping build and tests" >&2
 fi
 
+if [[ -x bin/app ]]; then
+    ./bin/app --input examples/small.txt
+else
+    echo "run_all: bin/app not built, skipping the application" >&2
+fi
+
 bash bench/run_benchmarks.sh
 
 if command -v perf >/dev/null; then

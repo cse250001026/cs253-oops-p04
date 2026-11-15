@@ -1,0 +1,15 @@
+9 9
+0 1
+1 2
+2 0
+2 3
+3 4
+4 5
+5 3
+3 6
+6 7
+separates 3 0 4
+separates 3 4 5
+separates 2 0 6
+separates 6 5 7
+separates 1 0 2
