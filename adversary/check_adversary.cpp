@@ -17,7 +17,14 @@ int main(int argc, char* argv[]) {
     Graph g(n);
     for (int i = 0; i < m; i++) {
         int u, v;
-        cin >> u >> v;
+        if (!(cin >> u >> v)) {
+            cerr << "header says " << m << " edges, read " << i << "\n";
+            return 2;
+        }
+        if (u < 0 || u >= n || v < 0 || v >= n) {
+            cerr << "edge " << i << " out of range\n";
+            return 2;
+        }
         g.add_edge(u, v);
     }
 
