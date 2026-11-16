@@ -44,7 +44,13 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - …
 
 **Shubham Sharma (Oracle):** PRs [#4](https://github.com/cse250001026/cs253-oops-p04/pull/4), [#7](https://github.com/cse250001026/cs253-oops-p04/pull/7), [#13](https://github.com/cse250001026/cs253-oops-p04/pull/13).
-- …
+- implemented the BFS oracle in oracle/bfs_oracle.hpp to identify articulation points and bridges by removing vertices and edges and recounting connected components.
+
+- Added tests/oracle_tests.cpp with basic graph cases and 2,000 random multigraph tests compared against an independent recursive Tarjan implementation.
+
+- Implemented differential testing to compare Structure A, Structure B and the oracle on randomly generated graphs. Added failure reporting and automatic shrinking of failing edge sequences.
+
+- Helped integrate graph and block-cut-tree invariant checks, documented the oracle module in oracle/README.md, and completed the D4 derivation.
 
 **Raunak Kumar Singh (Adversary):** PR [#16](https://github.com/cse250001026/cs253-oops-p04/pull/16), and the generators PR (merge [`7e9c107`](https://github.com/cse250001026/cs253-oops-p04/commit/7e9c107)).
 - …
@@ -324,18 +330,61 @@ Harary defines blocks to include isolated vertices and single bridges, and assum
 
 ### 7.1 The oracle and why it is correct
 
-> **TO FILL: Shubham** · about ½ page
-> `oracle/bfs_oracle.hpp`, `BfsOracle::solve`: remove each vertex and each non-loop edge in turn and count components by BFS. Why this is correct by definition (D4), why edges are removed by ID (parallel edges), why the test is "more than C0" components and not "more than 1", and its cost: O((V + E)^2), since it also removes every edge.
+The BFS oracle (oracle/bfs_oracle.hpp) is a brute-force implementation used to verify the results of the optimized algorithms.
+
+First, count_comp() runs BFS to find the initial number of connected components, (C_0). It starts a new BFS whenever it finds an unvisited vertex. Since each BFS covers exactly one connected component, the number of BFS runs gives the component count.
+
+To find articulation points, the oracle removes each vertex (v) individually and counts the remaining components. The result is stored in components_after_removal[v]. A vertex is an articulation point if its removal increases the number of components, meaning components_after_removal[v] > C0. We compare with (C_0) instead of 1 because the original graph may already be disconnected.
+
+Bridges are found similarly by removing each non-self-loop edge and running BFS again. Edges are identified using their unique IDs, so parallel edges are handled correctly. Self-loops are skipped because removing them cannot affect connectivity.
+
+The correctness follows directly from the definitions of articulation points and bridges. Each BFS gives the component count after the specified deletion, so comparing it with the original count determines whether that vertex or edge is critical.
+
+Each BFS takes (O(V+E)) time. Since we perform BFS for every vertex and every non-self-loop edge, the overall time complexity is (O((V+E)^2)), with (O(V)) auxiliary space. The oracle is therefore used only on smaller graphs.
 
 ### 7.2 Differential test
 
-> **TO FILL: Shubham** · about ½ page
-> `oracle/differential_test.cpp`: what one operation is, the graph sizes, the seed (20260928), the result at 10^5 and 10^6 operations, and how a failure is shrunk to a minimal edge sequence (`oracle/failure_shrinker.cpp`).
+The differential test is implemented in oracle/differential_test.cpp. Its purpose is to check whether Structure A, Structure B and the BFS oracle produce the same results on identical graphs.
+
+The program generates random graphs with 1 to 30 vertices and performs up to 60 random edge additions per graph. One operation is defined as adding an edge using add_edge(u, v) and comparing the three algorithms. The graph is also checked before any edges are added.
+
+We use mt19937 with default seed 20260928 so that the same random graphs can be generated again if a test fails.
+
+The compare() function checks:
+
+Articulation points from Structure A against the oracle.
+
+Bridge IDs from Structure A, Structure B and the oracle.
+
+Component counts after vertex removal from Structure A against the oracle.
+
+The test also runs graph and block-cut-tree invariant checks.
+
+Both (10^5) and (10^6) operations passed with seed 20260928, with no disagreements.
+
+If a mismatch occurs, the program prints the seed, test number, operations and differing results. It then calls shrink_failure() from oracle/failure_shrinker.cpp.
+
+The shrinker tries removing one edge addition at a time and rebuilds the graph using the remaining operations. If the same mismatch still occurs, that edge addition is removed permanently. This continues until no single remaining operation can be removed without losing the mismatch.
+
+This gives a smaller, 1-minimal failing sequence, making debugging easier.
 
 ### 7.3 Invariant checkers
 
-> **TO FILL: Shubham** · about ½ page
-> Each checker and what it tests: `tests/test_structA.cpp` (`verifyBccInvariants`), `tests/test_structB.cpp` (`verifyStructBInvariants`), `tests/oracle_tests.cpp`. Say how they are run (`make test`) and whether the differential test calls them.
+Apart from differential testing, the project uses invariant checkers to verify that the graph representation and algorithm outputs satisfy their expected properties.
+
+Graph invariants: check_graph_invariants() in oracle/invarient_checks.hpp checks vertex and edge IDs, adjacency-list sizes and edge consistency. Every non-self-loop edge must appear once in each endpoint's adjacency list, while self-loops must not appear there.
+
+Structure A invariants: verifyBccInvariants() in tests/test_structA.cpp checks that every non-self-loop edge belongs to exactly one biconnected component and that the BCC edge and vertex lists are consistent.
+
+Structure B invariants: verifyStructBInvariants() in tests/test_structB.cpp checks the 2-edge-connected component partition and verifies that bridges connect different 2-ECCs while non-bridge edges stay within the same 2-ECC.
+
+Block-cut-tree invariants: check_bct_invariants() in oracle/invarient_checks.hpp checks that the block-cut forest is bipartite and acyclic. For graphs with at most 15 vertices, it also compares separation queries against BFS after removing the specified vertex.
+
+Oracle tests: tests/oracle_tests.cpp covers paths, cycles, stars, disconnected graphs, parallel edges, self-loops and isolated vertices, along with 2,000 random multigraphs checked against an independent Tarjan implementation.
+
+All these tests can be run using make test.
+
+The differential test directly calls the graph and block-cut-tree invariant checkers. The detailed BCC and 2-ECC invariant checks are run through their separate Structure A and Structure B test programs.
 
 ### 7.4 Bug log
 
