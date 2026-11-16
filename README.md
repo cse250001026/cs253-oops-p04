@@ -242,8 +242,7 @@ One Intel Core i7-13650HX laptop, one P-core, g++ `-O2`; mean of 5 runs. Full an
   by the invariant tests on their own random graphs (REPORT.md §7.4, bug 10).
 - Timings come from one laptop and vary by up to 15 % between runs. A and B are timed alternately in one
   process, which shifts their ratio by about 10 % at V = 10^5 (REPORT.md §11.3 and §12).
-- `app` and `run_ops` do not check their input: a vertex outside 0 … n − 1 crashes them, and an edge
-  list shorter than its header is not reported. (`bench/bench.cpp` checks both.)
+- `app` and `run_ops` reject a bad header, a vertex outside 0 … n − 1, or an edge list shorter than its header: they print the reason to stderr and exit with status 1.
 - The cache profile needs Linux `perf` with access to the hardware counters; without it, `run_all.sh`
   skips that step.
 
