@@ -44,7 +44,13 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - …
 
 **Shubham Sharma (Oracle):** PRs [#4](https://github.com/cse250001026/cs253-oops-p04/pull/4), [#7](https://github.com/cse250001026/cs253-oops-p04/pull/7), [#13](https://github.com/cse250001026/cs253-oops-p04/pull/13).
-- …
+- implemented the BFS oracle in oracle/bfs_oracle.hpp to identify articulation points and bridges by removing vertices and edges and recounting connected components.
+
+- Added tests/oracle_tests.cpp with basic graph cases and 2,000 random multigraph tests compared against an independent recursive Tarjan implementation.
+
+- Implemented differential testing to compare Structure A, Structure B and the oracle on randomly generated graphs. Added failure reporting and automatic shrinking of failing edge sequences.
+
+- Helped integrate graph and block-cut-tree invariant checks, documented the oracle module in oracle/README.md, and completed the D4 derivation.
 
 **Raunak Kumar Singh (Adversary):** PRs [#16](https://github.com/cse250001026/cs253-oops-p04/pull/16) and [#24](https://github.com/cse250001026/cs253-oops-p04/pull/24).
 - Built seeded generators for deep paths, long cycles, joined cliques and six DFS-root cases ([`7e9c107`](https://github.com/cse250001026/cs253-oops-p04/commit/7e9c107)). Forced vertex 0 to be an endpoint of the generated path so DFS reaches depth `n - 1` ([`7360f11`](https://github.com/cse250001026/cs253-oops-p04/commit/7360f11)).
@@ -53,7 +59,7 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - Prepared [D5](docs/derivations/D5_250001060.pdf) on undirected DFS, low-link values and the root rule, and documented the test constructions in [Section 8](#8-adversarial-inputs).
 
 **Deepak Chahar (Analyst):** PRs [#1](https://github.com/cse250001026/cs253-oops-p04/pull/1), [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6), [#19](https://github.com/cse250001026/cs253-oops-p04/pull/19), [#20](https://github.com/cse250001026/cs253-oops-p04/pull/20), [#21](https://github.com/cse250001026/cs253-oops-p04/pull/21), [#25](https://github.com/cse250001026/cs253-oops-p04/pull/25) and the c3 results PR.
-- The predicted-cost model (§9, D6), written before measuring: a first draft at c1 ([`d6d6456`](https://github.com/cse250001026/cs253-oops-p04/commit/d6d6456)) and the final model with exact operation-counter predictions ([`5ff34df`](https://github.com/cse250001026/cs253-oops-p04/commit/5ff34df)), committed before any file in `results/raw/`.
+- The predicted-cost model (§9, D6), written before measuring: a first draft ([`d6d6456`](https://github.com/cse250001026/cs253-oops-p04/commit/d6d6456), written 10 Oct, merged to main 19 Oct in [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6)) and the final model with exact operation-counter predictions ([`5ff34df`](https://github.com/cse250001026/cs253-oops-p04/commit/5ff34df), 14 Nov 12:34), committed before any file in `results/raw/` (first data: [`89a6c81`](https://github.com/cse250001026/cs253-oops-p04/commit/89a6c81), 14 Nov 14:36).
 - The benchmark harness ([#19](https://github.com/cse250001026/cs253-oops-p04/pull/19)): `bench/bench.cpp` (timing, agreement checks against A and the oracle, the oracle's work cap), `bench/counters.hpp` (operation counters compiled out of timing builds, [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6)), `bench/run_benchmarks.sh`, `bench/cache_profile.sh`, `bench/plot_results.py` and `scripts/run_all.sh`; and the `Makefile` ([#20](https://github.com/cse250001026/cs253-oops-p04/pull/20)).
 - The measurements and figures in `results/` ([#21](https://github.com/cse250001026/cs253-oops-p04/pull/21), [#25](https://github.com/cse250001026/cs253-oops-p04/pull/25), tag c3), including the fix to the cache profile's per-solve count ([`034301c`](https://github.com/cse250001026/cs253-oops-p04/commit/034301c), bug 11), and the results in §11.
 - Reviews of teammates' PRs against the project specification, the bug log (§7.4), the report skeleton and §2 ([`e2deacf`](https://github.com/cse250001026/cs253-oops-p04/commit/e2deacf)), and the README.
@@ -330,18 +336,61 @@ Harary defines blocks to include isolated vertices and single bridges, and assum
 
 ### 7.1 The oracle and why it is correct
 
-> **TO FILL: Shubham** · about ½ page
-> `oracle/bfs_oracle.hpp`, `BfsOracle::solve`: remove each vertex and each non-loop edge in turn and count components by BFS. Why this is correct by definition (D4), why edges are removed by ID (parallel edges), why the test is "more than C0" components and not "more than 1", and its cost: O((V + E)^2), since it also removes every edge.
+The BFS oracle (oracle/bfs_oracle.hpp) is a brute-force implementation used to verify the results of the optimized algorithms.
+
+First, count_comp() runs BFS to find the initial number of connected components, (C_0). It starts a new BFS whenever it finds an unvisited vertex. Since each BFS covers exactly one connected component, the number of BFS runs gives the component count.
+
+To find articulation points, the oracle removes each vertex (v) individually and counts the remaining components. The result is stored in components_after_removal[v]. A vertex is an articulation point if its removal increases the number of components, meaning components_after_removal[v] > C0. We compare with (C_0) instead of 1 because the original graph may already be disconnected.
+
+Bridges are found similarly by removing each non-self-loop edge and running BFS again. Edges are identified using their unique IDs, so parallel edges are handled correctly. Self-loops are skipped because removing them cannot affect connectivity.
+
+The correctness follows directly from the definitions of articulation points and bridges. Each BFS gives the component count after the specified deletion, so comparing it with the original count determines whether that vertex or edge is critical.
+
+Each BFS takes (O(V+E)) time. Since we perform BFS for every vertex and every non-self-loop edge, the overall time complexity is (O((V+E)^2)), with (O(V)) auxiliary space. The oracle is therefore used only on smaller graphs.
 
 ### 7.2 Differential test
 
-> **TO FILL: Shubham** · about ½ page
-> `oracle/differential_test.cpp`: what one operation is, the graph sizes, the seed (20260928), the result at 10^5 and 10^6 operations, and how a failure is shrunk to a minimal edge sequence (`oracle/failure_shrinker.cpp`).
+The differential test is implemented in oracle/differential_test.cpp. Its purpose is to check whether Structure A, Structure B and the BFS oracle produce the same results on identical graphs.
+
+The program generates random graphs with 1 to 30 vertices and performs up to 60 random edge additions per graph. One operation is defined as adding an edge using add_edge(u, v) and comparing the three algorithms. The graph is also checked before any edges are added.
+
+We use mt19937 with default seed 20260928 so that the same random graphs can be generated again if a test fails.
+
+The compare() function checks:
+
+Articulation points from Structure A against the oracle.
+
+Bridge IDs from Structure A, Structure B and the oracle.
+
+Component counts after vertex removal from Structure A against the oracle.
+
+The test also runs graph and block-cut-tree invariant checks.
+
+Both (10^5) and (10^6) operations passed with seed 20260928, with no disagreements.
+
+If a mismatch occurs, the program prints the seed, test number, operations and differing results. It then calls shrink_failure() from oracle/failure_shrinker.cpp.
+
+The shrinker tries removing one edge addition at a time and rebuilds the graph using the remaining operations. If the same mismatch still occurs, that edge addition is removed permanently. This continues until no single remaining operation can be removed without losing the mismatch.
+
+This gives a smaller, 1-minimal failing sequence, making debugging easier.
 
 ### 7.3 Invariant checkers
 
-> **TO FILL: Shubham** · about ½ page
-> Each checker and what it tests: `tests/test_structA.cpp` (`verifyBccInvariants`), `tests/test_structB.cpp` (`verifyStructBInvariants`), `tests/oracle_tests.cpp`. Say how they are run (`make test`) and whether the differential test calls them.
+Apart from differential testing, the project uses invariant checkers to verify that the graph representation and algorithm outputs satisfy their expected properties.
+
+Graph invariants: check_graph_invariants() in oracle/invarient_checks.hpp checks vertex and edge IDs, adjacency-list sizes and edge consistency. Every non-self-loop edge must appear once in each endpoint's adjacency list, while self-loops must not appear there.
+
+Structure A invariants: verifyBccInvariants() in tests/test_structA.cpp checks that every non-self-loop edge belongs to exactly one biconnected component and that the BCC edge and vertex lists are consistent.
+
+Structure B invariants: verifyStructBInvariants() in tests/test_structB.cpp checks the 2-edge-connected component partition and verifies that bridges connect different 2-ECCs while non-bridge edges stay within the same 2-ECC.
+
+Block-cut-tree invariants: check_bct_invariants() in oracle/invarient_checks.hpp checks that the block-cut forest is bipartite and acyclic. For graphs with at most 15 vertices, it also compares separation queries against BFS after removing the specified vertex.
+
+Oracle tests: tests/oracle_tests.cpp covers paths, cycles, stars, disconnected graphs, parallel edges, self-loops and isolated vertices, along with 2,000 random multigraphs checked against an independent Tarjan implementation.
+
+All these tests can be run using make test.
+
+The differential test directly calls the graph and block-cut-tree invariant checkers. The detailed BCC and 2-ECC invariant checks are run through their separate Structure A and Structure B test programs.
 
 ### 7.4 Bug log
 
@@ -435,7 +484,7 @@ Run `bin/gen_multi 100000 20260928`. Start with a shuffled path, decide whether 
 
 ## 9. Predicted cost model
 
-The model below was written before any measurement. The first draft was committed at c1 in [`d6d6456`](https://github.com/cse250001026/cs253-oops-p04/commit/d6d6456) (10 Oct 2026); the final model was committed in [`5ff34df`](https://github.com/cse250001026/cs253-oops-p04/commit/5ff34df) (14 Nov 2026), before any file in `results/raw/`.
+The model below was written before any measurement. The first draft is [`d6d6456`](https://github.com/cse250001026/cs253-oops-p04/commit/d6d6456): written on 10 Oct 2026 and merged to main on 19 Oct in PR [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6). It is not in the c1 tag, which points at the empty repository skeleton (§12). The final model was committed in [`5ff34df`](https://github.com/cse250001026/cs253-oops-p04/commit/5ff34df) (14 Nov 2026, 12:34), two hours before the first file in `results/raw/` ([`89a6c81`](https://github.com/cse250001026/cs253-oops-p04/commit/89a6c81), 14 Nov 2026, 14:36); since then only this paragraph of §9 has changed. The D6 derivation (`docs/derivations/D6_250001026.pdf`, committed in [`b155b95`](https://github.com/cse250001026/cs253-oops-p04/commit/b155b95) on 15 Nov) writes up this same model; the evidence that the model came before the data is `5ff34df`, not the PDF's commit date.
 
 ### 9.1 Asymptotic model
 
@@ -561,8 +610,13 @@ Predicted:
     n = 10^3; and `gen_cliques` with 4 cliques of 700 vertices sharing one
     vertex (V = 2,797, E = 978,600). `bench/run_benchmarks.sh` generates
     them into a temporary folder on every run; they are never committed.
-- **Seeds:** the random graph for size V uses seed 20260928 + V. Every CSV
-  row records its seed.
+- **Seeds:** the random graph for size V uses seed 20260928 + V, and every
+  row of `scaling.csv`, `fullscale.csv`, `counters.csv` and
+  `cache_profile.csv` records its seed. The adversarial inputs all use seed
+  20260928 (`SEED_BASE` in `bench/run_benchmarks.sh`, passed to every
+  generator). `bench` reads them from generated files (`--input`), so the
+  `seed` column of `adversarial.csv` holds `NA`; the input name in its
+  `input` column, together with that script, identifies each graph exactly.
 - **Repetitions:** each point gets one untimed warm-up and then 5 timed
   runs. Figures show the mean, with error bars of ± one standard deviation.
 - **What is timed:** `std::chrono::steady_clock` around `solve()` only,
@@ -759,6 +813,11 @@ Commands, from the repository root after `make` (each count per solve is the run
 - **The cost model left out allocation and branches.** It predicted the cache effects but not A's 9 MB of fresh memory per solve or the oracle's branch mispredictions, which explain the two largest gaps (§11.2, §11.3). A solver that kept its buffers between solves would avoid the page faults.
 - **The cache profile is thin:** four graph sizes and one perf run each, so Figure 6 has no error bars. The counting build was not run on the adversarial inputs, so their DFS depth (n − 1 on the paths) follows from the construction rather than from a measured count.
 - **What we would measure next:** density, with E from 2V to 20V at fixed V, to separate per-vertex from per-edge costs and test the explanation in §11.4; the peak memory of A and B; and the oracle's branch-miss rate at every V.
+
+**Checkpoint tags (Deepak).**
+- **Tag c1 points at the empty repository skeleton** ([`35977a2`](https://github.com/cse250001026/cs253-oops-p04/commit/35977a2), 6 Oct), not at the c1 deliverables. They reached main later: the roles table on 10 Oct (PR [#1](https://github.com/cse250001026/cs253-oops-p04/pull/1)), INTERFACE.md with the full interface and invariants on 17 Oct (PR [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5)), and the cost-model draft on 19 Oct (PR [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6)).
+- **Tag c2 has an empty Makefile and two committed binaries** (bug 12), although its code passes the 10^5-operation differential test when built by hand.
+- **We did not move either tag,** because the guidelines forbid rewriting shared history; this section records the real dates instead. Next time we would tag only after the checkpoint's PRs are merged, and check the tag from a fresh clone (`git archive <tag>`, then `make && make test`).
 
 > **TO FILL: Deepak, with one line from each member** · ½ page
 > What does not work, what you would do differently, and what you would measure next. Each member adds one honest line about their module.

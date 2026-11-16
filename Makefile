@@ -7,7 +7,8 @@ SEED     ?= 20260928
 
 STRUCTB_SRC := $(wildcard src/structB/*.cpp)
 HEADERS     := include/graph.hpp src/structA/tarjan_lowlink.hpp oracle/bfs_oracle.hpp \
-               $(wildcard src/structB/*.hpp) $(wildcard oracle/*.hpp) bench/counters.hpp
+               $(wildcard src/structB/*.hpp) $(wildcard oracle/*.hpp) bench/counters.hpp \
+               $(wildcard app/*.hpp)
 SHRINKER    := $(wildcard oracle/failure_shrinker.cpp)
 GENERATORS  := $(patsubst adversary/%.cpp,$(BIN)/%,$(wildcard adversary/gen_*.cpp))
 
