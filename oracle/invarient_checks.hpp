@@ -75,7 +75,7 @@ inline bool check_bct_invariants(const Graph& g, const StructAResult& a_res, con
 
     // 3. Separation equivalence on small graphs (V <= 15) against BFS in G \ {v}
     if (g.V <= 15) {
-        for (int v : a_res.articulation_points) {
+        for (int v = 0; v < g.V; v++) {
             // Compute BFS reachability labels in G \ {v}
             vector<int> vis(g.V, -1);
             vector<int> q(g.V);
