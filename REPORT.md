@@ -130,31 +130,82 @@ All modules communicate through the header `include/graph.hpp` and adhere to the
 
 ## 4. Structure A: iterative Tarjan low-link DFS
 
-> **TO FILL: Chetna** · 2–3 pages
-> Code: `src/structA/tarjan_lowlink.hpp`, `TarjanSolver::solve` (calls `runStructA`).
+Structure A is implemented in `src/structA/tarjan_lowlink.hpp`. The public entry point is `TarjanSolver::solve(const Graph&)`, a thin wrapper over the internal `runStructA`. One iterative depth-first search over the whole graph yields the articulation points, the bridges, the biconnected components (BCCs) and the number of connected components left after deleting each vertex.
+
+The method is Tarjan's low-link scheme. For a vertex `u`, `tin[u]` is its discovery time and `low[u]` is the smallest `tin` reachable from the DFS subtree of `u` by tree edges followed by at most one back edge. Comparing `low[v]` with `tin[u]` when a child `v` finishes tells us whether the subtree of `v` can reach the rest of the graph without passing through `u` (or through the edge `(u,v)`).
 
 ### 4.1 Representation
-> The arrays kept (`tin`, `low`, `parent`, `parentEdge`, `next`, `separated`, the explicit DFS stack, the edge stack), what each stores, and the memory used.
+
+The input is the shared `Graph`: vertices `0…V-1`, edges with unique IDs, and adjacency lists of `(neighbour, edge ID)` pairs. Self-loops are stored in the edge list but kept out of the adjacency lists, so the DFS never sees them. The edge ID is what lets the code tell parallel edges apart.
+
+| Structure | Size | Meaning |
+|---|---|---|
+| `tin[u]` | V | Discovery time; unvisited until assigned, never changed afterwards. |
+| `low[u]` | V | Smallest `tin` reachable from the explored part of `u`'s subtree by tree edges plus at most one back edge. |
+| `parent[u]` | V | DFS parent of `u`, or `-1` for a DFS root. |
+| `parentEdge[u]` | V | ID of the tree edge that discovered `u`. |
+| `next[u]` | V | Index of the next adjacency entry of `u` still to be examined. |
+| `separated[u]` | V | Number of DFS children `v` of `u` with `low[v] >= tin[u]`. |
+| DFS stack | ≤ V | Discovered, unfinished vertices. Always a root-to-current path of the DFS tree. |
+| Edge stack | ≤ E | Edges seen whose BCC is not yet closed. |
+
+`next[u]` acts as the program counter of the simulated recursive call: when a child finishes, `u` resumes at exactly the adjacency entry where it left off. When `next[u]` reaches the end of `u`'s list, `u` is popped and `low[u]` is propagated to its parent.
+
+A tree edge is pushed on the edge stack when its child is discovered. A back edge is pushed only once, from its deeper endpoint to an already discovered ancestor. When a child `v` of `u` finishes with `low[v] >= tin[u]`, the edge stack is popped down to and including `(u,v)`; those edges are one BCC, stored as edge IDs in `bcc_edge_ids`, with `bcc_vertices` holding the distinct endpoints. Bridges are first recorded by edge ID in `bridge_ids`, and the returned `bridges` array follows that order: `bridges[i] == g.edges[bridge_ids[i]]`.
+
+**Memory.** The six per-vertex arrays and the DFS stack take O(V). The edge stack takes O(E) in the worst case, and the returned BCC lists hold O(V+E) entries in total (each edge appears in exactly one BCC, each vertex in at most one BCC per incident component of the block structure). The total auxiliary and output storage is therefore **O(V+E)**.
 
 ### 4.2 Operations and their complexity
-> | Step | What it does | Cost |
-> |------|--------------|------|
-> | Iterative DFS with `next[u]` | … | O(V + E) |
-> | Bridges: `low[u] > tin[p]` | … | |
-> | BCCs by popping the edge stack | … | |
-> | Articulation points: `pieces = separated[v] + (parent[v] != -1)` | … | |
-> | `components_after_removal` | … | |
+| Step | What it does | Cost |
+|---|---|---|
+| Iterative DFS with `next[u]` | Discovers every vertex once and scans every adjacency entry once, with no recursion. Restarted from each undiscovered vertex, so it builds a DFS forest. | O(V+E) |
+| Low-link update | `low[u] = min(low[u], tin[w])` for a back edge to `w`; `low[u] = min(low[u], low[v])` when child `v` finishes. | O(1) per edge |
+| Bridges: `low[v] > tin[u]` | Tree edge `(u,v)` is a bridge: the subtree of `v` has no route to `u` or above. | O(1) per tree edge |
+| BCCs by popping the edge stack | When `low[v] >= tin[u]`, pop through `(u,v)`; the popped edges form one BCC. | O(E) in total |
+| Articulation points: `pieces = separated[v] + (parent[v] != -1)` | `separated[u]` is incremented for each child with `low[v] >= tin[u]`. A vertex is an articulation point iff `pieces >= 2`. | O(1) per tree edge, O(V) to read off |
+| `components_after_removal` | `(C - 1) + pieces`, where `C` is the number of connected components of the original graph. | O(V) |
+| Build the result lists | Articulation points, bridge objects, BCC vertex lists. | O(V+E), equal to the output size |
+
+**Why the popping loop is not quadratic.** A single finished child may pop many edges, but each edge is pushed once and popped once over the whole run, so all pops together cost O(E).
+
+**Why the formula works.** Delete a non-root vertex `v` inside a component. Each child subtree with `low[child] >= tin[v]` becomes its own piece, and everything on the parent side forms one more piece: `separated[v] + 1` pieces. For a DFS root there is no parent side, and each child subtree is a piece: `separated[v]` pieces. The term `(parent[v] != -1)` covers both cases in one expression. The other `C - 1` components are untouched. An isolated vertex has `pieces = 0`, so deleting it leaves `C - 1` components, which is correct. A vertex is an articulation point exactly when its component splits into more than one piece, which gives the usual rules: a root needs at least two DFS children, and a non-root needs at least one child with `low[child] >= tin[v]`.
+
+**Total.** Each vertex is discovered once, each adjacency entry is scanned once, and each edge is pushed and popped once, so Structure A runs in **O(V+E)** time.
+
 
 ### 4.3 Invariants maintained
-> What holds on the stack and in `low[]` at each step, and why every edge is pushed onto the edge stack exactly once.
+
+Each invariant below is stated for a specific moment of the run.
+
+1. **DFS stack is the current tree path.** At every step the DFS stack, read from bottom to top, is the path from a DFS root to the vertex being processed. Every vertex `u` on it has `tin[u]` set and has examined exactly the adjacency entries before `next[u]`. This is what makes resuming after a child equal to recursive behaviour.
+
+2. **Low-link invariant.** While `u` is on the stack, `low[u]` equals the minimum of `tin[u]`, `tin[w]` over back edges `(x,w)` from the already explored part of `u`'s subtree, and `low[v]` over finished children `v`. When `u` is popped, all edges of its subtree have been examined, so `low[u]` is final.
+
+3. **Parent-edge invariant.** While scanning `u`, only the entry whose edge ID equals `parentEdge[u]` is ignored. Any other edge to `parent[u]` is a real back edge and is processed normally.
+
+4. **Edge-stack invariant.** Each edge is pushed exactly once: a tree edge when its child is discovered, a back edge only from the deeper endpoint to an ancestor (so the two adjacency copies of an edge do not cause two pushes). When child `v` of `u` finishes with `low[v] >= tin[u]`, the part of the stack above and including `(u,v)` consists exactly of the edges of the subtree of `v` not already placed in a closed BCC. Popping it therefore removes one complete BCC, and every edge ends in exactly one BCC. Articulation vertices may appear in several BCC vertex lists, since BCCs partition edges, not vertices.
+
+5. **Separation-count invariant.** After `u` finishes, `separated[u]` is exactly the number of its children `v` with `low[v] >= tin[u]`. The same number drives the articulation test and `components_after_removal`.
+
+6. **Forest coverage.** The outer loop starts a new DFS from every undiscovered vertex, so every vertex gets a `tin`, and `C` equals the number of DFS roots.
+
+**Edge cases.** Self-loops never enter the adjacency lists, so they do not change `tin`, `low`, any BCC or any count. An isolated vertex is its own DFS root with `pieces = 0` and belongs to no BCC (it has no edges). A bridge is a BCC consisting of a single edge. Parallel edges are handled by invariant 3: two parallel edges between `u` and its parent give `low[u] <= tin[parent]`, so the connecting edge is correctly not reported as a bridge.
 
 ### 4.4 Design decisions and rejected alternatives
-> | Decision | Alternative rejected | Why |
-> |----------|----------------------|-----|
-> | Explicit stack | Recursive DFS | Overflows on a 10^5-vertex path |
-> | Skip the parent by edge ID | Skip by parent vertex | … (parallel edges) |
-> | One formula for root and non-root | Separate root test | … |
-> | | | |
+
+| Decision | Alternative rejected | Why |
+|---|---|---|
+| Explicit DFS stack with `next[u]` | Recursive DFS | A path graph has DFS depth V, and V can be 10^5. Recursion would depend on the call stack. |
+| Explicit stack | Recursion with an enlarged stack size (`ulimit -s`, thread stack attribute) | It works only on machines where the limit can be raised, and the safe size depends on the platform and compiler. An explicit stack has no such dependence and its memory use is known (O(V)). |
+| Skip the parent by edge ID (`parentEdge[u]`) | Skip every edge whose other endpoint is `parent[u]` | With parallel edges, skipping by vertex ignores the second connection to the parent and reports a false bridge. |
+| Edge stack for BCCs | Vertex stack (the common variant that stores vertices) | A vertex stack gives BCC vertex sets directly, but our output is edge-based (`bcc_edge_ids`), and with parallel edges and bridges a vertex-only form loses which edges belong to which BCC. The edge stack gives edge IDs and lets the vertex lists be derived. |
+| Edge stack inside the same DFS | Chain decomposition, or a second traversal to rebuild BCCs | Both are also linear, but the low-link test already says when a BCC closes, so popping at that moment avoids a second pass and extra structures. |
+| Push back edges only from the descendant | Push every non-tree adjacency entry | Each undirected edge is listed at both endpoints; pushing from both would duplicate edges and break the edge partition. |
+| One formula `separated[v] + (parent[v] != -1)` | Separate root and non-root post-processing | The only difference between the cases is the parent-side piece, so one expression is enough and removes a branch where bugs could hide. |
+| Restart DFS from every undiscovered vertex | Assume a connected graph | Inputs may be disconnected or contain isolated vertices; correct counts need a DFS forest and the value `C`. |
+| Identify bridges by edge ID | Identify bridges by endpoint pair | Parallel edges can have identical endpoints but are distinct edges. |
+| One Tarjan pass for everything | Delete each vertex or edge and re-search | Repeated searches require O((V+E)^2) time when checking both vertex and edge removals. This approach is used only by the oracle (`BfsOracle`), not by Structure A. |
+
 
 ## 5. Structure B: bridges by union-find path marking
 
