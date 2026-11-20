@@ -2,17 +2,6 @@
 
 Team Oops · CS 253 / MA 253 · cs253-oops-p04
 
-<!--
-HOW TO FILL THIS REPORT (delete this comment before the final tag)
-- Each section starts with a "TO FILL" box naming its owner. Write only in your own sections.
-- Replace the box with your text when you are done. Keep the section and sub-section headings.
-- Write in your own words. Text from a paper, website or AI tool must be quoted and cited (guidelines 4.4),
-  and AI use must also be declared in TOOLS.md.
-- Give numbers with units, and sizes as exact values or powers of ten.
-- Work on a branch, commit with the prefix "report:", and open a PR. Deadline: Sunday 15 Nov, 20:00.
-- Before the final tag, `grep -n "TO FILL" REPORT.md` must print nothing.
-Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs and do not count.
--->
 
 ## 1. Team and contributions
 
@@ -25,11 +14,11 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 | Raunak Kumar Singh | 250001060 | @cse250001060-collab | Adversary | `adversary/` | D5 |
 | Deepak Chahar | 250001026 | @cse250001026 | Analyst | `bench/` | D6 |
 
-> **TO FILL: every member, in your own row below** · ½ page in total
-> Three or four bullets on what you built, each linked to the commit or PR that added it. The PRs already merged are listed for you; add any that follow.
-
-**Chetna Mundra (Structure A):** PRs [#9](https://github.com/cse250001026/cs253-oops-p04/pull/9), [#14](https://github.com/cse250001026/cs253-oops-p04/pull/14), [#17](https://github.com/cse250001026/cs253-oops-p04/pull/17).
-- …
+**Chetna Mundra (Structure A):** PRs [#9](https://github.com/cse250001026/cs253-oops-p04/pull/9), [#14](https://github.com/cse250001026/cs253-oops-p04/pull/14), [#17](https://github.com/cse250001026/cs253-oops-p04/pull/17), [#33](https://github.com/cse250001026/cs253-oops-p04/pull/33).
+- The iterative Tarjan low-link DFS in `src/structA/tarjan_lowlink.hpp` (`runStructA`, `TarjanSolver::solve`): an explicit DFS stack with a `next[u]` cursor, so a 10^5-vertex path cannot overflow the call stack; articulation points, bridges and biconnected components from one DFS; and `components_after_removal` from `pieces = separated[v] + (parent[v] != -1)` ([`5361f19`](https://github.com/cse250001026/cs253-oops-p04/commit/5361f19), [#9](https://github.com/cse250001026/cs253-oops-p04/pull/9); the `TarjanSolver` interface in [`3c71398`](https://github.com/cse250001026/cs253-oops-p04/commit/3c71398), [#14](https://github.com/cse250001026/cs253-oops-p04/pull/14)).
+- The Structure A tests in `tests/test_structA.cpp`: 11 fixed cases (paths, triangles, parallel edges, self-loops, empty and isolated vertices), 3,000 seeded random multigraphs checked against an independent brute-force connectivity check and the block invariants, and stress tests on a 10^5-vertex path, cycle and star ([`5361f19`](https://github.com/cse250001026/cs253-oops-p04/commit/5361f19)).
+- [D1](docs/derivations/D1_250001024.pdf) on the articulation-point criterion, including the root rule ([`83f0301`](https://github.com/cse250001026/cs253-oops-p04/commit/83f0301), [#17](https://github.com/cse250001026/cs253-oops-p04/pull/17)).
+- The operation counters in Structure A (`vertices_visited`, `half_edges_scanned`, `edge_stack_pushes`, `max_stack_depth`) and Section 4 of this report ([`832af44`](https://github.com/cse250001026/cs253-oops-p04/commit/832af44), [`b522137`](https://github.com/cse250001026/cs253-oops-p04/commit/b522137), [#33](https://github.com/cse250001026/cs253-oops-p04/pull/33)).
 
 **Mayank Gupta (Structure B):** PRs [#8](https://github.com/cse250001026/cs253-oops-p04/pull/8), [#10](https://github.com/cse250001026/cs253-oops-p04/pull/10), [#12](https://github.com/cse250001026/cs253-oops-p04/pull/12).
 - Iterative DFS forest construction (`DFSForest.cpp`) with explicit heap stack and edge index pointers, preventing call stack overflow on deep paths up to $V = 100,000$ ([#8](https://github.com/cse250001026/cs253-oops-p04/pull/8)).
@@ -41,7 +30,6 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - Designed the shared graph representation (`include/graph.hpp`) and common API specifications (`INTERFACE.md`) for `Graph`, `AdjEdge`, `Edge`, `StructAResult`, `StructBResult`, `OracleResult`, and `NodeRobustness` ([#26](https://github.com/cse250001026/cs253-oops-p04/pull/26), [#27](https://github.com/cse250001026/cs253-oops-p04/pull/27)).
 - Implemented the Block-Cut Forest construction, Euler-tour timestamping (`tin`/`tout`), separation query engine (`separates(v, x, y)`), and node robustness ranking in `app/block_cut_tree.hpp`.
 - Built the application driver (`app/app.cpp`), hidden-test evaluation driver (`app/run_ops.cpp`), Block-Cut Tree invariant verifier (`check_bct_invariants` in `oracle/invarient_checks.hpp`), and D3 derivation (`docs/derivations/D3_250001068.pdf`).
-- …
 
 **Shubham Sharma (Oracle):** PRs [#4](https://github.com/cse250001026/cs253-oops-p04/pull/4), [#7](https://github.com/cse250001026/cs253-oops-p04/pull/7), [#13](https://github.com/cse250001026/cs253-oops-p04/pull/13).
 - implemented the BFS oracle in oracle/bfs_oracle.hpp to identify articulation points and bridges by removing vertices and edges and recounting connected components.
@@ -445,39 +433,7 @@ The differential test directly calls the graph and block-cut-tree invariant chec
 
 ### 7.4 Bug log
 
-Built from every commit in the repository (all branches as of 15 Nov 2026: 83 commits, 58 of them non-merge), the pull-request
-reviews, and the review notes kept during the project. "Found" is the date the bug was first seen; each fixed bug
-links to the commit that fixed it. Where the evidence doesn't show how a bug was found, the entry says so and the
-owner should confirm.
-
-#### Fixed
-
-| # | Found | Module | Symptom | How found | Fixed in |
-|---|-------|--------|---------|-----------|----------|
-| 1 | 2026-10-17 | oracle | Link error: `count_components` was defined in a header without `inline` or an include guard, so any program including `oracle/brute_force.hpp` from two `.cpp` files failed with "multiple definition of count_components". Introduced in [`144a453`](https://github.com/cse250001026/cs253-oops-p04/commit/144a453). | Review; confirmed by compiling two translation units that include the header. | [`429b862`](https://github.com/cse250001026/cs253-oops-p04/commit/429b862) (2026-10-17): moved into `class BfsOracle` with guard `BFS_ORACLE_HPP`; member functions defined in the class are implicitly `inline`. |
-| 2 | 2026-10-17 | oracle | Edge deletion did nothing: `count_comp(g, delNode, delEdge, …)` never used `delEdge` (`-Wextra` reported it unused), so a "removed" edge was still traversed, removing an edge could never raise the component count, and no bridge would ever have been reported. The first draft also named the removed edge by its endpoint pair, which cannot tell two parallel edges apart. Introduced in [`144a453`](https://github.com/cse250001026/cs253-oops-p04/commit/144a453), carried into [`429b862`](https://github.com/cse250001026/cs253-oops-p04/commit/429b862). | Review, helped by the `-Wextra` unused-parameter warning. No wrong answer was ever produced, because the fix landed with the first bridge loop. | [`217f6bf`](https://github.com/cse250001026/cs253-oops-p04/commit/217f6bf) (2026-10-18): the BFS skips the edge by ID (`e.id == delEdge`), so deleting one parallel copy leaves the other. |
-| 3 | 2026-10-18 | oracle | Performance: `count_comp` took `vis` and `que` **by value**, copying two O(V) arrays on each of its 1 + V + E′ calls and reallocating `vis` inside. Introduced in [`429b862`](https://github.com/cse250001026/cs253-oops-p04/commit/429b862). | Code review *(Shubham to confirm)*. | [`217f6bf`](https://github.com/cse250001026/cs253-oops-p04/commit/217f6bf) (2026-10-18): pass by reference; reset with `fill`. |
-| 4 | 2026-10-28 | structB | Complexity: the DSU had path compression only, and path marking linked sets directly (`dsu.rep[x] = dsu.find(parent[x])`). The code therefore did not achieve the O((V + E) α(V)) bound that D2 must prove, only O(log V) amortised per find. Union by rank cannot simply be added, because the marking loop needs each set's root to be its shallowest vertex. | Review of PR `struct2` against the D2 bound. | [`6c7fb89`](https://github.com/cse250001026/cs253-oops-p04/commit/6c7fb89) added union by rank to `DSU::unite`, which path marking still bypassed; [`ebc8b0e`](https://github.com/cse250001026/cs253-oops-p04/commit/ebc8b0e) (2026-10-29) completed the fix: `highest[]` stores each set's shallowest vertex, and marking calls `get_highest()` and `unite(x, parent[x], depth)`. |
-| 5 | 2026-10-28 | structB | Test that could never fail: `src/structB/test_structB.cpp` only printed bridges and 2-ECCs, asserted nothing, and compiled only with `-DSTRUCTB_STANDALONE`, so a broken Structure B would still exit 0. | Review of PR `struct2`; re-checked 2026-11-09. | [`014f4f5`](https://github.com/cse250001026/cs253-oops-p04/commit/014f4f5) (2026-11-09): replaced by `tests/test_structB.cpp`, which asserts fixed cases, agreement with A and the oracle, the 2-ECC partition and bridge invariants, and runs 10^5-vertex stress tests. |
-| 6 | 2026-11-01 | structA | Interface mismatch: Structure A exposed a free function `runStructA()` with include guard `STRUCT_A_HPP`, but INTERFACE.md §2.1 defines `class TarjanSolver { static StructAResult solve(const Graph&); }` with guard `TARJAN_LOWLINK_HPP`. Any caller written to the spec (application, differential test, benchmark harness) failed to compile with "'TarjanSolver' has not been declared". The code reached main in this state through PR #9 (2026-11-02). The algorithm itself was correct. | Review of `feat/structA` against INTERFACE.md; confirmed 2026-11-06 by compiling a program written only from INTERFACE.md. | [`3c71398`](https://github.com/cse250001026/cs253-oops-p04/commit/3c71398) (2026-11-10, PR #14): added `TarjanSolver::solve` (calling `runStructA`, which the tests keep using) and renamed the guard. |
-| 7 | 2026-11-06 | structB | `UnionFindBridgeSolver::solve()` sorted `bridges` by endpoints, while `bridge_ids`, Structure A and the oracle list bridges by edge ID, so `bridges[i] ≠ edges[bridge_ids[i]]`. On 5,000 random graphs, A's and B's `bridges` lists differed in 1,218 cases. Minimal case, reproduced on `a374cae`: with edge 0 = (2,3) and edge 1 = (0,1), both bridges, A returns (2,3), (0,1) and B returned (0,1), (2,3). `bridge_ids` agreed, so every check that compared only IDs passed. The `include/graph.hpp` comment "Sorted canonical Edge objects" invites this sort (bug 9). | Comparing A's and B's complete outputs on 5,000 random graphs; then guarded by the invariant checker in `tests/test_structB.cpp` (`bridges[i] == g.edges[bridge_ids[i]]`). | [`014f4f5`](https://github.com/cse250001026/cs253-oops-p04/commit/014f4f5) (2026-11-09): sort removed; `bridges` follows `bridge_ids`. |
-| 8 | 2026-11-11 | adversary | `gen_path` at its defaults did not overflow a recursive DFS, which is the spec's target. Labels were shuffled, so vertex 0 (the DFS root) fell mid-path and the DFS depth was only 60,102. A recursive Tarjan with an 8 MiB stack (Linux, g++ 16.2) finished at both `-O0` and `-O2`. Structures A and B agreed on every version, and matched the oracle on the smaller ones. | Adversarial input, run against a recursive reference DFS. Re-checked 2026-11-13. | [`7360f11`](https://github.com/cse250001026/cs253-oops-p04/commit/7360f11) (2026-11-14): the path starts at vertex 0, so the DFS depth is n − 1. Re-checked 2026-11-15 with an 8 MiB stack: a recursive DFS overflows on `gen_path 100000` at `-O0` (not at `-O2`) and on `gen_path 1000000` at both. The measurement runs of PRs #21 and #25 used the old generator; the c3 run uses the fixed one. |
-| 9 | 2026-11-06 | include | `include/graph.hpp` lines 68, 78 and 88 described `bridges` as "Sorted canonical Edge objects", without saying sorted by what. All three modules return them in `bridge_ids` order. This wording is what led to bug 7. | Review. | [`73264b8`](https://github.com/cse250001026/cs253-oops-p04/commit/73264b8) (2026-11-14): the comment now reads `bridges[i] == edges[bridge_ids[i]] (edge-ID order)`. |
-| 11 | 2026-11-15 | bench | Figure 6 understated Structure A's cache misses per solve by a sixth. `bench/cache_profile.sh` divided every structure's net count by REPS + 1 = 6 solves, but `bin/bench` always makes one reference A solve, which the `none` baseline also makes, so the A run adds only 5 solves (B adds 6: five timed, one warm-up). The script also started `taskset` under `perf`, so the E-core (`cpu_atom`) counters picked up the start of each run, and the plot added them in. On the data of PR #25 the fix reverses the A/B order in one of the eight bar pairs (L3 misses at V = 10^5, E = 5 × 10^5). Introduced in [`7280a4f`](https://github.com/cse250001026/cs253-oops-p04/commit/7280a4f). | Review of the per-solve arithmetic; confirmed by counting instructions for runs of 5 and 10 repetitions: (10 runs − 5 runs) ÷ 5 matched the fixed divisor to 0.01 % for A and B, while the old divisor gave 13.3 million instead of 16.0 million instructions per A solve. | [`034301c`](https://github.com/cse250001026/cs253-oops-p04/commit/034301c) (2026-11-15): the `solves` column is 0, 5 or 6 per structure, and `taskset` starts `perf`, so the E-core counters read `<not counted>`. The c3 data was measured with the fix. |
-| 12 | 2026-11-16 | build | The c2 checkpoint snapshot does not build with the README command. Tag c2 (13 Nov, on merge [`e6a7347`](https://github.com/cse250001026/cs253-oops-p04/commit/e6a7347)) has an empty (0-byte) `Makefile`, so `make` and `make test` fail there, and it contains two committed Windows build outputs, `bin/oracle_tests.exe` and `bin/test_structB.exe` (added in [`014f4f5`](https://github.com/cse250001026/cs253-oops-p04/commit/014f4f5)). The code itself met c2: built by hand at the tag, the differential test passes 10^5 operations with seed 20260928. | Audit of the checkpoint tags against the submission guidelines (`git archive c2`, then `make`). | [`2fd2d85`](https://github.com/cse250001026/cs253-oops-p04/commit/2fd2d85) and [`00488c6`](https://github.com/cse250001026/cs253-oops-p04/commit/00488c6) (14 Nov) removed the binaries; [`7592828`](https://github.com/cse250001026/cs253-oops-p04/commit/7592828) (14 Nov, PR [#20](https://github.com/cse250001026/cs253-oops-p04/pull/20)) added the Makefile. The tag was not moved, because shared history is not rewritten (§12). |
-| 13 | 2026-11-16 | build | Stale test binary: the Makefile's `HEADERS` did not list `app/block_cut_tree.hpp`, although `bin/differential_test` includes it through `oracle/invarient_checks.hpp` (since [`e80059b`](https://github.com/cse250001026/cs253-oops-p04/commit/e80059b)). After an edit to the block-cut tree, `make test` reported `bin/differential_test` up to date and ran the old binary. | Review of the Makefile's dependencies; confirmed with `touch app/block_cut_tree.hpp; make -n bin/differential_test`, which printed "is up to date". | The PR from `bench/cost-model-final` (16 Nov): `HEADERS` now includes `$(wildcard app/*.hpp)`, and the same command prints the compile line. |
-| 14 | 2026-11-16 | adversary | The checker called `add_edge` after a failed read and accepted endpoint IDs outside the graph. | Code review, then checked truncated input, a non-integer endpoint and an out-of-range endpoint. | The checker validates each read and endpoint pair before adding the edge. All three malformed cases exit with code 2. |
-| 15 | 2026-11-16 | adversary | The `25000 5` joined-clique case generated 100,001 vertices, one over the assignment limit. | Checked the generator's vertex count against the assignment limit. | Changed the case to `24999 5` and verified the generated graph has 99,997 vertices and 249,990 edges. |
-
-#### Found, not yet fixed
-
-| # | Found | Module | Symptom | How found | Status |
-|---|-------|--------|---------|-----------|--------|
-| 10 | 2026-11-11 | oracle | Test gap: the differential test compares only `articulation_points`, `bridge_ids` and `components_after_removal`. It would not catch bug 7, or wrong `bridges`, `two_eccs` or `bcc_*` output. | Review against INTERFACE.md §3. | Partly fixed in [`e4a83b4`](https://github.com/cse250001026/cs253-oops-p04/commit/e4a83b4) (2026-11-14): every graph in the differential test now passes `check_graph_invariants` (`oracle/invarient_checks.hpp`) before the comparison. The output checkers (`verifyBccInvariants` in `tests/test_structA.cpp`, `verifyStructBInvariants` in `tests/test_structB.cpp`) still run only on those tests' own random graphs. |
-
-No wrong-answer bug was found in Structure A's algorithm: from its first commit ([`5361f19`](https://github.com/cse250001026/cs253-oops-p04/commit/5361f19)) it matched the oracle and
-Structure B, including on 20,000 random graphs with parallel edges, self-loops and disconnected parts. Owners should
-add any bug they found and fixed before committing, with the date, how it was found and the evidence.
+The full bug log, with how each bug was found and the commit that fixed it, is in [Appendix A](#appendix-a-bug-log-74), so that it does not interrupt the report. Its numbers (bug 1 to bug 13) are the ones cited elsewhere in this report and in the README.
 
 ## 8. Adversarial inputs
 
@@ -824,6 +780,82 @@ We predicted (§9.3) that L3 misses per edge would rise at the same sizes as tim
 
 ### 11.8 Follow-up checks (not in `results/raw`)
 
+To explain the gaps in §11.1–11.3 we ran a few extra measurements by hand after the main run: A and B in separate processes, page faults per solve, the oracle's branch mispredictions and a 10^6-vertex path. The results (Table 11.5) and the commands are in [Appendix B](#appendix-b-follow-up-checks-118). They are not in `results/raw`; adding them to the harness is the first item in §12.
+
+## 12. Limitations
+
+**Measurement (Deepak).**
+- **The follow-up checks are not in the harness.** The measurements in §11.8 (separate processes, page faults, the oracle's branch mispredictions, the 10^6-vertex path) were run by hand. They should be experiments in `bench/run_benchmarks.sh`, so that `scripts/run_all.sh` reproduces every number in this report.
+- **The harness times A and B in the same process,** which shifts both by about 10 % at V = 10^5 (§11.3). Each structure should be timed in its own process, with its page faults recorded next to its time.
+- **One laptop, one run.** Every timing comes from one i7-13650HX laptop on the `powersave` governor, with 5 runs per point. Pinning kept each run on CPU 2 but not other programs off its hyperthread sibling (CPU 3), and spreads reach 15 % (§11.1). Next time we would reserve the whole core or turn off SMT, use the `performance` governor, and repeat the run on different days.
+- **The cost model left out allocation and branches.** It predicted the cache effects but not A's 9 MB of fresh memory per solve or the oracle's branch mispredictions, which explain the two largest gaps (§11.2, §11.3). A solver that kept its buffers between solves would avoid the page faults.
+- **The cache profile is thin:** four graph sizes and one perf run each, so Figure 6 has no error bars. The counting build was not run on the adversarial inputs, so their DFS depth (n − 1 on the paths) follows from the construction rather than from a measured count.
+- **What we would measure next:** density, with E from 2V to 20V at fixed V, to separate per-vertex from per-edge costs and test the explanation in §11.4; the peak memory of A and B; and the oracle's branch-miss rate at every V.
+
+**Checkpoint tags (Deepak).**
+- **Tag c1 points at the empty repository skeleton** ([`35977a2`](https://github.com/cse250001026/cs253-oops-p04/commit/35977a2), 6 Oct), not at the c1 deliverables. They reached main later: the roles table on 10 Oct (PR [#1](https://github.com/cse250001026/cs253-oops-p04/pull/1)), INTERFACE.md with the full interface and invariants on 17 Oct (PR [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5)), and the cost-model draft on 19 Oct (PR [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6)).
+- **Tag c2 has an empty Makefile and two committed binaries** (bug 12), although its code passes the 10^5-operation differential test when built by hand.
+- **We did not move either tag,** because the guidelines forbid rewriting shared history; this section records the real dates instead. Next time we would tag only after the checkpoint's PRs are merged, and check the tag from a fresh clone (`git archive <tag>`, then `make && make test`).
+
+**Modules (one line from each member).**
+- **Structure A (Chetna).** `runStructA` allocates its per-vertex and per-edge arrays afresh on every solve, about 9 MB at V = 10^5, which costs about 2,300 page faults per solve and is the main reason A is slower than B at full scale (§11.3, §11.8). Keeping the buffers between solves would remove most of that cost.
+- **Structure B (Mayank).** B finds only bridges and 2-edge-connected components, not articulation points or blocks, so the block-cut tree and the separation queries depend on Structure A alone and B cross-checks only the bridge half of A's answer. Its 3V + 3E′ − 2C − 5b union-find finds (§9.2) also make it slower than A while the graph fits in L2.
+- **Oracle (Shubham).** The oracle removes every edge as well as every vertex, so it reads 2E′(V + E′) half-edges, Θ((V + E)²) rather than the O(V(V + E)) of the statement. Removing only the at most V − 1 DFS-tree edges (no other edge can be a bridge) would meet the bound on dense graphs too. The differential test uses graphs of at most 30 vertices, so deep DFS paths and large inputs are covered only by the stress and adversarial tests.
+- **Block-cut tree (Sufiyan).** When both query endpoints $x$ and $y$ fall inside the DFS subtree of cut vertex $v$, `separates(v, x, y)` binary-searches $v$'s children in $O(\log(\text{deg}_T(v)))$ time; storing a flat Euler tour with a sparse table would make even this case $O(1)$ at the cost of $O(V \log V)$ extra memory.
+- **Adversary (Raunak).** At full scale the checker asserts agreement on bridge IDs. It reports A's articulation and block counts, so an incorrect count by itself does not fail the run. A next step is to check those counts against the expected values for each constructed graph.
+
+## 13. References
+
+
+1. R. E. Tarjan, "Depth-first search and linear graph algorithms," *SIAM Journal on Computing* 1(2):146–160, 1972.
+2. J. Hopcroft and R. E. Tarjan, "Algorithm 447: Efficient algorithms for graph manipulation," *Communications of the ACM* 16(6):372–378, 1973.
+3. R. E. Tarjan, "A note on finding the bridges of a graph," *Information Processing Letters* 2(6):160–161, 1974.
+4. R. E. Tarjan, "Efficiency of a good but not linear set union algorithm," *Journal of the ACM* 22(2):215–225, 1975.
+5. J. M. Schmidt, "A simple test on 2-vertex- and 2-edge-connectivity," *Information Processing Letters* 113(7):241–244, 2013.
+6. F. Harary, *Graph Theory*, Addison-Wesley, 1969, Chapter 3.
+7. T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*, 3rd ed., MIT Press, 2009, Problem 22-2.
+8. R. E. Tarjan and J. van Leeuwen, "Worst-case analysis of set union algorithms," *Journal of the ACM* 31(2):245–281, 1984.
+9. N. Enriquez, G. Faraud and L. Ménard, "Limiting shape of the depth first search tree in an Erdős–Rényi graph," *Random Structures & Algorithms* 56(2), 2020; arXiv:1704.00696.
+10. Tools: g++ (GCC) 16.2.1, GNU Make 4.4.1, Linux `perf` 7.3.1, Python 3.14 with matplotlib 3.11; AI tools as declared in [TOOLS.md](TOOLS.md).
+
+## Appendix A. Bug log (§7.4)
+
+Built from every commit in the repository (all branches as of 15 Nov 2026: 83 commits, 58 of them non-merge), the pull-request
+reviews, and the review notes kept during the project. "Found" is the date the bug was first seen; each fixed bug
+links to the commit that fixed it. Where the evidence doesn't show how a bug was found, the entry says so and the
+owner should confirm.
+
+#### Fixed
+
+| # | Found | Module | Symptom | How found | Fixed in |
+|---|-------|--------|---------|-----------|----------|
+| 1 | 2026-10-17 | oracle | Link error: `count_components` was defined in a header without `inline` or an include guard, so any program including `oracle/brute_force.hpp` from two `.cpp` files failed with "multiple definition of count_components". Introduced in [`144a453`](https://github.com/cse250001026/cs253-oops-p04/commit/144a453). | Review; confirmed by compiling two translation units that include the header. | [`429b862`](https://github.com/cse250001026/cs253-oops-p04/commit/429b862) (2026-10-17): moved into `class BfsOracle` with guard `BFS_ORACLE_HPP`; member functions defined in the class are implicitly `inline`. |
+| 2 | 2026-10-17 | oracle | Edge deletion did nothing: `count_comp(g, delNode, delEdge, …)` never used `delEdge` (`-Wextra` reported it unused), so a "removed" edge was still traversed, removing an edge could never raise the component count, and no bridge would ever have been reported. The first draft also named the removed edge by its endpoint pair, which cannot tell two parallel edges apart. Introduced in [`144a453`](https://github.com/cse250001026/cs253-oops-p04/commit/144a453), carried into [`429b862`](https://github.com/cse250001026/cs253-oops-p04/commit/429b862). | Review, helped by the `-Wextra` unused-parameter warning. No wrong answer was ever produced, because the fix landed with the first bridge loop. | [`217f6bf`](https://github.com/cse250001026/cs253-oops-p04/commit/217f6bf) (2026-10-18): the BFS skips the edge by ID (`e.id == delEdge`), so deleting one parallel copy leaves the other. |
+| 3 | 2026-10-18 | oracle | Performance: `count_comp` took `vis` and `que` **by value**, copying two O(V) arrays on each of its 1 + V + E′ calls and reallocating `vis` inside. Introduced in [`429b862`](https://github.com/cse250001026/cs253-oops-p04/commit/429b862). | Code review *(Shubham to confirm)*. | [`217f6bf`](https://github.com/cse250001026/cs253-oops-p04/commit/217f6bf) (2026-10-18): pass by reference; reset with `fill`. |
+| 4 | 2026-10-28 | structB | Complexity: the DSU had path compression only, and path marking linked sets directly (`dsu.rep[x] = dsu.find(parent[x])`). The code therefore did not achieve the O((V + E) α(V)) bound that D2 must prove, only O(log V) amortised per find. Union by rank cannot simply be added, because the marking loop needs each set's root to be its shallowest vertex. | Review of PR `struct2` against the D2 bound. | [`6c7fb89`](https://github.com/cse250001026/cs253-oops-p04/commit/6c7fb89) added union by rank to `DSU::unite`, which path marking still bypassed; [`ebc8b0e`](https://github.com/cse250001026/cs253-oops-p04/commit/ebc8b0e) (2026-10-29) completed the fix: `highest[]` stores each set's shallowest vertex, and marking calls `get_highest()` and `unite(x, parent[x], depth)`. |
+| 5 | 2026-10-28 | structB | Test that could never fail: `src/structB/test_structB.cpp` only printed bridges and 2-ECCs, asserted nothing, and compiled only with `-DSTRUCTB_STANDALONE`, so a broken Structure B would still exit 0. | Review of PR `struct2`; re-checked 2026-11-09. | [`014f4f5`](https://github.com/cse250001026/cs253-oops-p04/commit/014f4f5) (2026-11-09): replaced by `tests/test_structB.cpp`, which asserts fixed cases, agreement with A and the oracle, the 2-ECC partition and bridge invariants, and runs 10^5-vertex stress tests. |
+| 6 | 2026-11-01 | structA | Interface mismatch: Structure A exposed a free function `runStructA()` with include guard `STRUCT_A_HPP`, but INTERFACE.md §2.1 defines `class TarjanSolver { static StructAResult solve(const Graph&); }` with guard `TARJAN_LOWLINK_HPP`. Any caller written to the spec (application, differential test, benchmark harness) failed to compile with "'TarjanSolver' has not been declared". The code reached main in this state through PR #9 (2026-11-02). The algorithm itself was correct. | Review of `feat/structA` against INTERFACE.md; confirmed 2026-11-06 by compiling a program written only from INTERFACE.md. | [`3c71398`](https://github.com/cse250001026/cs253-oops-p04/commit/3c71398) (2026-11-10, PR #14): added `TarjanSolver::solve` (calling `runStructA`, which the tests keep using) and renamed the guard. |
+| 7 | 2026-11-06 | structB | `UnionFindBridgeSolver::solve()` sorted `bridges` by endpoints, while `bridge_ids`, Structure A and the oracle list bridges by edge ID, so `bridges[i] ≠ edges[bridge_ids[i]]`. On 5,000 random graphs, A's and B's `bridges` lists differed in 1,218 cases. Minimal case, reproduced on `a374cae`: with edge 0 = (2,3) and edge 1 = (0,1), both bridges, A returns (2,3), (0,1) and B returned (0,1), (2,3). `bridge_ids` agreed, so every check that compared only IDs passed. The `include/graph.hpp` comment "Sorted canonical Edge objects" invites this sort (bug 9). | Comparing A's and B's complete outputs on 5,000 random graphs; then guarded by the invariant checker in `tests/test_structB.cpp` (`bridges[i] == g.edges[bridge_ids[i]]`). | [`014f4f5`](https://github.com/cse250001026/cs253-oops-p04/commit/014f4f5) (2026-11-09): sort removed; `bridges` follows `bridge_ids`. |
+| 8 | 2026-11-11 | adversary | `gen_path` at its defaults did not overflow a recursive DFS, which is the spec's target. Labels were shuffled, so vertex 0 (the DFS root) fell mid-path and the DFS depth was only 60,102. A recursive Tarjan with an 8 MiB stack (Linux, g++ 16.2) finished at both `-O0` and `-O2`. Structures A and B agreed on every version, and matched the oracle on the smaller ones. | Adversarial input, run against a recursive reference DFS. Re-checked 2026-11-13. | [`7360f11`](https://github.com/cse250001026/cs253-oops-p04/commit/7360f11) (2026-11-14): the path starts at vertex 0, so the DFS depth is n − 1. Re-checked 2026-11-15 with an 8 MiB stack: a recursive DFS overflows on `gen_path 100000` at `-O0` (not at `-O2`) and on `gen_path 1000000` at both. The measurement runs of PRs #21 and #25 used the old generator; the c3 run uses the fixed one. |
+| 9 | 2026-11-06 | include | `include/graph.hpp` lines 68, 78 and 88 described `bridges` as "Sorted canonical Edge objects", without saying sorted by what. All three modules return them in `bridge_ids` order. This wording is what led to bug 7. | Review. | [`73264b8`](https://github.com/cse250001026/cs253-oops-p04/commit/73264b8) (2026-11-14): the comment now reads `bridges[i] == edges[bridge_ids[i]] (edge-ID order)`. |
+| 11 | 2026-11-15 | bench | Figure 6 understated Structure A's cache misses per solve by a sixth. `bench/cache_profile.sh` divided every structure's net count by REPS + 1 = 6 solves, but `bin/bench` always makes one reference A solve, which the `none` baseline also makes, so the A run adds only 5 solves (B adds 6: five timed, one warm-up). The script also started `taskset` under `perf`, so the E-core (`cpu_atom`) counters picked up the start of each run, and the plot added them in. On the data of PR #25 the fix reverses the A/B order in one of the eight bar pairs (L3 misses at V = 10^5, E = 5 × 10^5). Introduced in [`7280a4f`](https://github.com/cse250001026/cs253-oops-p04/commit/7280a4f). | Review of the per-solve arithmetic; confirmed by counting instructions for runs of 5 and 10 repetitions: (10 runs − 5 runs) ÷ 5 matched the fixed divisor to 0.01 % for A and B, while the old divisor gave 13.3 million instead of 16.0 million instructions per A solve. | [`034301c`](https://github.com/cse250001026/cs253-oops-p04/commit/034301c) (2026-11-15): the `solves` column is 0, 5 or 6 per structure, and `taskset` starts `perf`, so the E-core counters read `<not counted>`. The c3 data was measured with the fix. |
+| 12 | 2026-11-16 | build | The c2 checkpoint snapshot does not build with the README command. Tag c2 (13 Nov, on merge [`e6a7347`](https://github.com/cse250001026/cs253-oops-p04/commit/e6a7347)) has an empty (0-byte) `Makefile`, so `make` and `make test` fail there, and it contains two committed Windows build outputs, `bin/oracle_tests.exe` and `bin/test_structB.exe` (added in [`014f4f5`](https://github.com/cse250001026/cs253-oops-p04/commit/014f4f5)). The code itself met c2: built by hand at the tag, the differential test passes 10^5 operations with seed 20260928. | Audit of the checkpoint tags against the submission guidelines (`git archive c2`, then `make`). | [`2fd2d85`](https://github.com/cse250001026/cs253-oops-p04/commit/2fd2d85) and [`00488c6`](https://github.com/cse250001026/cs253-oops-p04/commit/00488c6) (14 Nov) removed the binaries; [`7592828`](https://github.com/cse250001026/cs253-oops-p04/commit/7592828) (14 Nov, PR [#20](https://github.com/cse250001026/cs253-oops-p04/pull/20)) added the Makefile. The tag was not moved, because shared history is not rewritten (§12). |
+| 13 | 2026-11-16 | build | Stale test binary: the Makefile's `HEADERS` did not list `app/block_cut_tree.hpp`, although `bin/differential_test` includes it through `oracle/invarient_checks.hpp` (since [`e80059b`](https://github.com/cse250001026/cs253-oops-p04/commit/e80059b)). After an edit to the block-cut tree, `make test` reported `bin/differential_test` up to date and ran the old binary. | Review of the Makefile's dependencies; confirmed with `touch app/block_cut_tree.hpp; make -n bin/differential_test`, which printed "is up to date". | The PR from `bench/cost-model-final` (16 Nov): `HEADERS` now includes `$(wildcard app/*.hpp)`, and the same command prints the compile line. |
+| 14 | 2026-11-16 | adversary | The checker called `add_edge` after a failed read and accepted endpoint IDs outside the graph. | Code review, then checked truncated input, a non-integer endpoint and an out-of-range endpoint. | The checker validates each read and endpoint pair before adding the edge. All three malformed cases exit with code 2. |
+| 15 | 2026-11-16 | adversary | The `25000 5` joined-clique case generated 100,001 vertices, one over the assignment limit. | Checked the generator's vertex count against the assignment limit. | Changed the case to `24999 5` and verified the generated graph has 99,997 vertices and 249,990 edges. |
+
+#### Found, not yet fixed
+
+| # | Found | Module | Symptom | How found | Status |
+|---|-------|--------|---------|-----------|--------|
+| 10 | 2026-11-11 | oracle | Test gap: the differential test compares only `articulation_points`, `bridge_ids` and `components_after_removal`. It would not catch bug 7, or wrong `bridges`, `two_eccs` or `bcc_*` output. | Review against INTERFACE.md §3. | Partly fixed in [`e4a83b4`](https://github.com/cse250001026/cs253-oops-p04/commit/e4a83b4) (2026-11-14): every graph in the differential test now passes `check_graph_invariants` (`oracle/invarient_checks.hpp`) before the comparison. The output checkers (`verifyBccInvariants` in `tests/test_structA.cpp`, `verifyStructBInvariants` in `tests/test_structB.cpp`) still run only on those tests' own random graphs. |
+
+No wrong-answer bug was found in Structure A's algorithm: from its first commit ([`5361f19`](https://github.com/cse250001026/cs253-oops-p04/commit/5361f19)) it matched the oracle and
+Structure B, including on 20,000 random graphs with parallel edges, self-loops and disconnected parts. Owners should
+add any bug they found and fixed before committing, with the date, how it was found and the evidence.
+
+## Appendix B. Follow-up checks (§11.8)
+
 To explain the gaps in §11.1–11.3 we ran a few extra measurements by hand after the main run, with the same binaries, on another P-core (CPU 4). They are not in `results/raw`; adding them to the harness is the first item in §12.
 
 **Table 11.5.** Follow-up checks, 15 Nov 2026.
@@ -854,38 +886,3 @@ Commands, from the repository root after `make` (each count per solve is the run
         -- bin/bench --random 5000 25000 20265928 --structures oracle --reps 1
     bin/gen_path 1000000 20260928 > path.txt
     taskset -c 4 bin/bench --input path.txt --structures A,B --reps 5
-
-## 12. Limitations
-
-**Measurement (Deepak).**
-- **The follow-up checks are not in the harness.** The measurements in §11.8 (separate processes, page faults, the oracle's branch mispredictions, the 10^6-vertex path) were run by hand. They should be experiments in `bench/run_benchmarks.sh`, so that `scripts/run_all.sh` reproduces every number in this report.
-- **The harness times A and B in the same process,** which shifts both by about 10 % at V = 10^5 (§11.3). Each structure should be timed in its own process, with its page faults recorded next to its time.
-- **One laptop, one run.** Every timing comes from one i7-13650HX laptop on the `powersave` governor, with 5 runs per point. Pinning kept each run on CPU 2 but not other programs off its hyperthread sibling (CPU 3), and spreads reach 15 % (§11.1). Next time we would reserve the whole core or turn off SMT, use the `performance` governor, and repeat the run on different days.
-- **The cost model left out allocation and branches.** It predicted the cache effects but not A's 9 MB of fresh memory per solve or the oracle's branch mispredictions, which explain the two largest gaps (§11.2, §11.3). A solver that kept its buffers between solves would avoid the page faults.
-- **The cache profile is thin:** four graph sizes and one perf run each, so Figure 6 has no error bars. The counting build was not run on the adversarial inputs, so their DFS depth (n − 1 on the paths) follows from the construction rather than from a measured count.
-- **What we would measure next:** density, with E from 2V to 20V at fixed V, to separate per-vertex from per-edge costs and test the explanation in §11.4; the peak memory of A and B; and the oracle's branch-miss rate at every V.
-
-**Checkpoint tags (Deepak).**
-- **Tag c1 points at the empty repository skeleton** ([`35977a2`](https://github.com/cse250001026/cs253-oops-p04/commit/35977a2), 6 Oct), not at the c1 deliverables. They reached main later: the roles table on 10 Oct (PR [#1](https://github.com/cse250001026/cs253-oops-p04/pull/1)), INTERFACE.md with the full interface and invariants on 17 Oct (PR [#5](https://github.com/cse250001026/cs253-oops-p04/pull/5)), and the cost-model draft on 19 Oct (PR [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6)).
-- **Tag c2 has an empty Makefile and two committed binaries** (bug 12), although its code passes the 10^5-operation differential test when built by hand.
-- **We did not move either tag,** because the guidelines forbid rewriting shared history; this section records the real dates instead. Next time we would tag only after the checkpoint's PRs are merged, and check the tag from a fresh clone (`git archive <tag>`, then `make && make test`).
-
-> **TO FILL: Deepak, with one line from each member** · ½ page
-> What does not work, what you would do differently, and what you would measure next. Each member adds one honest line about their module.
-- **Block-Cut Tree (`app/`):** When both query endpoints $x$ and $y$ fall inside the DFS subtree of cut vertex $v$, `separates(v, x, y)` binary-searches $v$'s children in $O(\log(\text{deg}_T(v)))$ time; storing a flat Euler tour with a sparse table would make even this case $O(1)$ at the cost of $O(V \log V)$ extra memory.
-
-- **Adversary.** At full scale the checker asserts agreement on bridge IDs. It reports A's articulation and block counts, so an incorrect count by itself does not fail the run. A next step is to check those counts against the expected values for each constructed graph.
-
-## 13. References
-
-
-1. R. E. Tarjan, "Depth-first search and linear graph algorithms," *SIAM Journal on Computing* 1(2):146–160, 1972.
-2. J. Hopcroft and R. E. Tarjan, "Algorithm 447: Efficient algorithms for graph manipulation," *Communications of the ACM* 16(6):372–378, 1973.
-3. R. E. Tarjan, "A note on finding the bridges of a graph," *Information Processing Letters* 2(6):160–161, 1974.
-4. R. E. Tarjan, "Efficiency of a good but not linear set union algorithm," *Journal of the ACM* 22(2):215–225, 1975.
-5. J. M. Schmidt, "A simple test on 2-vertex- and 2-edge-connectivity," *Information Processing Letters* 113(7):241–244, 2013.
-6. F. Harary, *Graph Theory*, Addison-Wesley, 1969, Chapter 3.
-7. T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*, 3rd ed., MIT Press, 2009, Problem 22-2.
-8. R. E. Tarjan and J. van Leeuwen, "Worst-case analysis of set union algorithms," *Journal of the ACM* 31(2):245–281, 1984.
-9. N. Enriquez, G. Faraud and L. Ménard, "Limiting shape of the depth first search tree in an Erdős–Rényi graph," *Random Structures & Algorithms* 56(2), 2020; arXiv:1704.00696.
-10. Tools: g++ (GCC) 16.2.1, GNU Make 4.4.1, Linux `perf` 7.3.1, Python 3.14 with matplotlib 3.11; AI tools as declared in [TOOLS.md](TOOLS.md).
