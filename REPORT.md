@@ -44,10 +44,19 @@ Target length: 12-20 pages, excluding appendices. Derivations are separate PDFs 
 - …
 
 **Shubham Sharma (Oracle):** PRs [#4](https://github.com/cse250001026/cs253-oops-p04/pull/4), [#7](https://github.com/cse250001026/cs253-oops-p04/pull/7), [#13](https://github.com/cse250001026/cs253-oops-p04/pull/13).
-- …
+- implemented the BFS oracle in oracle/bfs_oracle.hpp to identify articulation points and bridges by removing vertices and edges and recounting connected components.
 
-**Raunak Kumar Singh (Adversary):** PR [#16](https://github.com/cse250001026/cs253-oops-p04/pull/16), and the generators PR (merge [`7e9c107`](https://github.com/cse250001026/cs253-oops-p04/commit/7e9c107)).
-- …
+- Added tests/oracle_tests.cpp with basic graph cases and 2,000 random multigraph tests compared against an independent recursive Tarjan implementation.
+
+- Implemented differential testing to compare Structure A, Structure B and the oracle on randomly generated graphs. Added failure reporting and automatic shrinking of failing edge sequences.
+
+- Helped integrate graph and block-cut-tree invariant checks, documented the oracle module in oracle/README.md, and completed the D4 derivation.
+
+**Raunak Kumar Singh (Adversary):** PRs [#16](https://github.com/cse250001026/cs253-oops-p04/pull/16) and [#24](https://github.com/cse250001026/cs253-oops-p04/pull/24).
+- Built seeded generators for deep paths, long cycles, joined cliques and six DFS-root cases ([`7e9c107`](https://github.com/cse250001026/cs253-oops-p04/commit/7e9c107)). Forced vertex 0 to be an endpoint of the generated path so DFS reaches depth `n - 1` ([`7360f11`](https://github.com/cse250001026/cs253-oops-p04/commit/7360f11)).
+- Added a generator for paths with parallel edges and self-loops to test bridge detection by edge ID ([#16](https://github.com/cse250001026/cs253-oops-p04/pull/16)).
+- Added `check_adversary.cpp` and `scripts/adversary.sh` to check small cases against BFS and compare bridge IDs from A and B at scale ([#24](https://github.com/cse250001026/cs253-oops-p04/pull/24)). Added edge input validation and brought the many-clique stress case within the vertex limit.
+- Prepared [D5](docs/derivations/D5_250001060.pdf) on undirected DFS, low-link values and the root rule, and documented the test constructions in [Section 8](#8-adversarial-inputs).
 
 **Deepak Chahar (Analyst):** PRs [#1](https://github.com/cse250001026/cs253-oops-p04/pull/1), [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6), [#19](https://github.com/cse250001026/cs253-oops-p04/pull/19), [#20](https://github.com/cse250001026/cs253-oops-p04/pull/20), [#21](https://github.com/cse250001026/cs253-oops-p04/pull/21), [#25](https://github.com/cse250001026/cs253-oops-p04/pull/25) and the c3 results PR.
 - The predicted-cost model (§9, D6), written before measuring: a first draft ([`d6d6456`](https://github.com/cse250001026/cs253-oops-p04/commit/d6d6456), written 10 Oct, merged to main 19 Oct in [#6](https://github.com/cse250001026/cs253-oops-p04/pull/6)) and the final model with exact operation-counter predictions ([`5ff34df`](https://github.com/cse250001026/cs253-oops-p04/commit/5ff34df), 14 Nov 12:34), committed before any file in `results/raw/` (first data: [`89a6c81`](https://github.com/cse250001026/cs253-oops-p04/commit/89a6c81), 14 Nov 14:36).
@@ -121,31 +130,82 @@ All modules communicate through the header `include/graph.hpp` and adhere to the
 
 ## 4. Structure A: iterative Tarjan low-link DFS
 
-> **TO FILL: Chetna** · 2–3 pages
-> Code: `src/structA/tarjan_lowlink.hpp`, `TarjanSolver::solve` (calls `runStructA`).
+Structure A is implemented in `src/structA/tarjan_lowlink.hpp`. The public entry point is `TarjanSolver::solve(const Graph&)`, a thin wrapper over the internal `runStructA`. One iterative depth-first search over the whole graph yields the articulation points, the bridges, the biconnected components (BCCs) and the number of connected components left after deleting each vertex.
+
+The method is Tarjan's low-link scheme. For a vertex `u`, `tin[u]` is its discovery time and `low[u]` is the smallest `tin` reachable from the DFS subtree of `u` by tree edges followed by at most one back edge. Comparing `low[v]` with `tin[u]` when a child `v` finishes tells us whether the subtree of `v` can reach the rest of the graph without passing through `u` (or through the edge `(u,v)`).
 
 ### 4.1 Representation
-> The arrays kept (`tin`, `low`, `parent`, `parentEdge`, `next`, `separated`, the explicit DFS stack, the edge stack), what each stores, and the memory used.
+
+The input is the shared `Graph`: vertices `0…V-1`, edges with unique IDs, and adjacency lists of `(neighbour, edge ID)` pairs. Self-loops are stored in the edge list but kept out of the adjacency lists, so the DFS never sees them. The edge ID is what lets the code tell parallel edges apart.
+
+| Structure | Size | Meaning |
+|---|---|---|
+| `tin[u]` | V | Discovery time; unvisited until assigned, never changed afterwards. |
+| `low[u]` | V | Smallest `tin` reachable from the explored part of `u`'s subtree by tree edges plus at most one back edge. |
+| `parent[u]` | V | DFS parent of `u`, or `-1` for a DFS root. |
+| `parentEdge[u]` | V | ID of the tree edge that discovered `u`. |
+| `next[u]` | V | Index of the next adjacency entry of `u` still to be examined. |
+| `separated[u]` | V | Number of DFS children `v` of `u` with `low[v] >= tin[u]`. |
+| DFS stack | ≤ V | Discovered, unfinished vertices. Always a root-to-current path of the DFS tree. |
+| Edge stack | ≤ E | Edges seen whose BCC is not yet closed. |
+
+`next[u]` acts as the program counter of the simulated recursive call: when a child finishes, `u` resumes at exactly the adjacency entry where it left off. When `next[u]` reaches the end of `u`'s list, `u` is popped and `low[u]` is propagated to its parent.
+
+A tree edge is pushed on the edge stack when its child is discovered. A back edge is pushed only once, from its deeper endpoint to an already discovered ancestor. When a child `v` of `u` finishes with `low[v] >= tin[u]`, the edge stack is popped down to and including `(u,v)`; those edges are one BCC, stored as edge IDs in `bcc_edge_ids`, with `bcc_vertices` holding the distinct endpoints. Bridges are first recorded by edge ID in `bridge_ids`, and the returned `bridges` array follows that order: `bridges[i] == g.edges[bridge_ids[i]]`.
+
+**Memory.** The six per-vertex arrays and the DFS stack take O(V). The edge stack takes O(E) in the worst case, and the returned BCC lists hold O(V+E) entries in total (each edge appears in exactly one BCC, each vertex in at most one BCC per incident component of the block structure). The total auxiliary and output storage is therefore **O(V+E)**.
 
 ### 4.2 Operations and their complexity
-> | Step | What it does | Cost |
-> |------|--------------|------|
-> | Iterative DFS with `next[u]` | … | O(V + E) |
-> | Bridges: `low[u] > tin[p]` | … | |
-> | BCCs by popping the edge stack | … | |
-> | Articulation points: `pieces = separated[v] + (parent[v] != -1)` | … | |
-> | `components_after_removal` | … | |
+| Step | What it does | Cost |
+|---|---|---|
+| Iterative DFS with `next[u]` | Discovers every vertex once and scans every adjacency entry once, with no recursion. Restarted from each undiscovered vertex, so it builds a DFS forest. | O(V+E) |
+| Low-link update | `low[u] = min(low[u], tin[w])` for a back edge to `w`; `low[u] = min(low[u], low[v])` when child `v` finishes. | O(1) per edge |
+| Bridges: `low[v] > tin[u]` | Tree edge `(u,v)` is a bridge: the subtree of `v` has no route to `u` or above. | O(1) per tree edge |
+| BCCs by popping the edge stack | When `low[v] >= tin[u]`, pop through `(u,v)`; the popped edges form one BCC. | O(E) in total |
+| Articulation points: `pieces = separated[v] + (parent[v] != -1)` | `separated[u]` is incremented for each child with `low[v] >= tin[u]`. A vertex is an articulation point iff `pieces >= 2`. | O(1) per tree edge, O(V) to read off |
+| `components_after_removal` | `(C - 1) + pieces`, where `C` is the number of connected components of the original graph. | O(V) |
+| Build the result lists | Articulation points, bridge objects, BCC vertex lists. | O(V+E), equal to the output size |
+
+**Why the popping loop is not quadratic.** A single finished child may pop many edges, but each edge is pushed once and popped once over the whole run, so all pops together cost O(E).
+
+**Why the formula works.** Delete a non-root vertex `v` inside a component. Each child subtree with `low[child] >= tin[v]` becomes its own piece, and everything on the parent side forms one more piece: `separated[v] + 1` pieces. For a DFS root there is no parent side, and each child subtree is a piece: `separated[v]` pieces. The term `(parent[v] != -1)` covers both cases in one expression. The other `C - 1` components are untouched. An isolated vertex has `pieces = 0`, so deleting it leaves `C - 1` components, which is correct. A vertex is an articulation point exactly when its component splits into more than one piece, which gives the usual rules: a root needs at least two DFS children, and a non-root needs at least one child with `low[child] >= tin[v]`.
+
+**Total.** Each vertex is discovered once, each adjacency entry is scanned once, and each edge is pushed and popped once, so Structure A runs in **O(V+E)** time.
+
 
 ### 4.3 Invariants maintained
-> What holds on the stack and in `low[]` at each step, and why every edge is pushed onto the edge stack exactly once.
+
+Each invariant below is stated for a specific moment of the run.
+
+1. **DFS stack is the current tree path.** At every step the DFS stack, read from bottom to top, is the path from a DFS root to the vertex being processed. Every vertex `u` on it has `tin[u]` set and has examined exactly the adjacency entries before `next[u]`. This is what makes resuming after a child equal to recursive behaviour.
+
+2. **Low-link invariant.** While `u` is on the stack, `low[u]` equals the minimum of `tin[u]`, `tin[w]` over back edges `(x,w)` from the already explored part of `u`'s subtree, and `low[v]` over finished children `v`. When `u` is popped, all edges of its subtree have been examined, so `low[u]` is final.
+
+3. **Parent-edge invariant.** While scanning `u`, only the entry whose edge ID equals `parentEdge[u]` is ignored. Any other edge to `parent[u]` is a real back edge and is processed normally.
+
+4. **Edge-stack invariant.** Each edge is pushed exactly once: a tree edge when its child is discovered, a back edge only from the deeper endpoint to an ancestor (so the two adjacency copies of an edge do not cause two pushes). When child `v` of `u` finishes with `low[v] >= tin[u]`, the part of the stack above and including `(u,v)` consists exactly of the edges of the subtree of `v` not already placed in a closed BCC. Popping it therefore removes one complete BCC, and every edge ends in exactly one BCC. Articulation vertices may appear in several BCC vertex lists, since BCCs partition edges, not vertices.
+
+5. **Separation-count invariant.** After `u` finishes, `separated[u]` is exactly the number of its children `v` with `low[v] >= tin[u]`. The same number drives the articulation test and `components_after_removal`.
+
+6. **Forest coverage.** The outer loop starts a new DFS from every undiscovered vertex, so every vertex gets a `tin`, and `C` equals the number of DFS roots.
+
+**Edge cases.** Self-loops never enter the adjacency lists, so they do not change `tin`, `low`, any BCC or any count. An isolated vertex is its own DFS root with `pieces = 0` and belongs to no BCC (it has no edges). A bridge is a BCC consisting of a single edge. Parallel edges are handled by invariant 3: two parallel edges between `u` and its parent give `low[u] <= tin[parent]`, so the connecting edge is correctly not reported as a bridge.
 
 ### 4.4 Design decisions and rejected alternatives
-> | Decision | Alternative rejected | Why |
-> |----------|----------------------|-----|
-> | Explicit stack | Recursive DFS | Overflows on a 10^5-vertex path |
-> | Skip the parent by edge ID | Skip by parent vertex | … (parallel edges) |
-> | One formula for root and non-root | Separate root test | … |
-> | | | |
+
+| Decision | Alternative rejected | Why |
+|---|---|---|
+| Explicit DFS stack with `next[u]` | Recursive DFS | A path graph has DFS depth V, and V can be 10^5. Recursion would depend on the call stack. |
+| Explicit stack | Recursion with an enlarged stack size (`ulimit -s`, thread stack attribute) | It works only on machines where the limit can be raised, and the safe size depends on the platform and compiler. An explicit stack has no such dependence and its memory use is known (O(V)). |
+| Skip the parent by edge ID (`parentEdge[u]`) | Skip every edge whose other endpoint is `parent[u]` | With parallel edges, skipping by vertex ignores the second connection to the parent and reports a false bridge. |
+| Edge stack for BCCs | Vertex stack (the common variant that stores vertices) | A vertex stack gives BCC vertex sets directly, but our output is edge-based (`bcc_edge_ids`), and with parallel edges and bridges a vertex-only form loses which edges belong to which BCC. The edge stack gives edge IDs and lets the vertex lists be derived. |
+| Edge stack inside the same DFS | Chain decomposition, or a second traversal to rebuild BCCs | Both are also linear, but the low-link test already says when a BCC closes, so popping at that moment avoids a second pass and extra structures. |
+| Push back edges only from the descendant | Push every non-tree adjacency entry | Each undirected edge is listed at both endpoints; pushing from both would duplicate edges and break the edge partition. |
+| One formula `separated[v] + (parent[v] != -1)` | Separate root and non-root post-processing | The only difference between the cases is the parent-side piece, so one expression is enough and removes a branch where bugs could hide. |
+| Restart DFS from every undiscovered vertex | Assume a connected graph | Inputs may be disconnected or contain isolated vertices; correct counts need a DFS forest and the value `C`. |
+| Identify bridges by edge ID | Identify bridges by endpoint pair | Parallel edges can have identical endpoints but are distinct edges. |
+| One Tarjan pass for everything | Delete each vertex or edge and re-search | Repeated searches require O((V+E)^2) time when checking both vertex and edge removals. This approach is used only by the oracle (`BfsOracle`), not by Structure A. |
+
 
 ## 5. Structure B: bridges by union-find path marking
 
@@ -327,18 +387,61 @@ Harary defines blocks to include isolated vertices and single bridges, and assum
 
 ### 7.1 The oracle and why it is correct
 
-> **TO FILL: Shubham** · about ½ page
-> `oracle/bfs_oracle.hpp`, `BfsOracle::solve`: remove each vertex and each non-loop edge in turn and count components by BFS. Why this is correct by definition (D4), why edges are removed by ID (parallel edges), why the test is "more than C0" components and not "more than 1", and its cost: O((V + E)^2), since it also removes every edge.
+The BFS oracle (oracle/bfs_oracle.hpp) is a brute-force implementation used to verify the results of the optimized algorithms.
+
+First, count_comp() runs BFS to find the initial number of connected components, (C_0). It starts a new BFS whenever it finds an unvisited vertex. Since each BFS covers exactly one connected component, the number of BFS runs gives the component count.
+
+To find articulation points, the oracle removes each vertex (v) individually and counts the remaining components. The result is stored in components_after_removal[v]. A vertex is an articulation point if its removal increases the number of components, meaning components_after_removal[v] > C0. We compare with (C_0) instead of 1 because the original graph may already be disconnected.
+
+Bridges are found similarly by removing each non-self-loop edge and running BFS again. Edges are identified using their unique IDs, so parallel edges are handled correctly. Self-loops are skipped because removing them cannot affect connectivity.
+
+The correctness follows directly from the definitions of articulation points and bridges. Each BFS gives the component count after the specified deletion, so comparing it with the original count determines whether that vertex or edge is critical.
+
+Each BFS takes (O(V+E)) time. Since we perform BFS for every vertex and every non-self-loop edge, the overall time complexity is (O((V+E)^2)), with (O(V)) auxiliary space. The oracle is therefore used only on smaller graphs.
 
 ### 7.2 Differential test
 
-> **TO FILL: Shubham** · about ½ page
-> `oracle/differential_test.cpp`: what one operation is, the graph sizes, the seed (20260928), the result at 10^5 and 10^6 operations, and how a failure is shrunk to a minimal edge sequence (`oracle/failure_shrinker.cpp`).
+The differential test is implemented in oracle/differential_test.cpp. Its purpose is to check whether Structure A, Structure B and the BFS oracle produce the same results on identical graphs.
+
+The program generates random graphs with 1 to 30 vertices and performs up to 60 random edge additions per graph. One operation is defined as adding an edge using add_edge(u, v) and comparing the three algorithms. The graph is also checked before any edges are added.
+
+We use mt19937 with default seed 20260928 so that the same random graphs can be generated again if a test fails.
+
+The compare() function checks:
+
+Articulation points from Structure A against the oracle.
+
+Bridge IDs from Structure A, Structure B and the oracle.
+
+Component counts after vertex removal from Structure A against the oracle.
+
+The test also runs graph and block-cut-tree invariant checks.
+
+Both (10^5) and (10^6) operations passed with seed 20260928, with no disagreements.
+
+If a mismatch occurs, the program prints the seed, test number, operations and differing results. It then calls shrink_failure() from oracle/failure_shrinker.cpp.
+
+The shrinker tries removing one edge addition at a time and rebuilds the graph using the remaining operations. If the same mismatch still occurs, that edge addition is removed permanently. This continues until no single remaining operation can be removed without losing the mismatch.
+
+This gives a smaller, 1-minimal failing sequence, making debugging easier.
 
 ### 7.3 Invariant checkers
 
-> **TO FILL: Shubham** · about ½ page
-> Each checker and what it tests: `tests/test_structA.cpp` (`verifyBccInvariants`), `tests/test_structB.cpp` (`verifyStructBInvariants`), `tests/oracle_tests.cpp`. Say how they are run (`make test`) and whether the differential test calls them.
+Apart from differential testing, the project uses invariant checkers to verify that the graph representation and algorithm outputs satisfy their expected properties.
+
+Graph invariants: check_graph_invariants() in oracle/invarient_checks.hpp checks vertex and edge IDs, adjacency-list sizes and edge consistency. Every non-self-loop edge must appear once in each endpoint's adjacency list, while self-loops must not appear there.
+
+Structure A invariants: verifyBccInvariants() in tests/test_structA.cpp checks that every non-self-loop edge belongs to exactly one biconnected component and that the BCC edge and vertex lists are consistent.
+
+Structure B invariants: verifyStructBInvariants() in tests/test_structB.cpp checks the 2-edge-connected component partition and verifies that bridges connect different 2-ECCs while non-bridge edges stay within the same 2-ECC.
+
+Block-cut-tree invariants: check_bct_invariants() in oracle/invarient_checks.hpp checks that the block-cut forest is bipartite and acyclic. For graphs with at most 15 vertices, it also compares separation queries against BFS after removing the specified vertex.
+
+Oracle tests: tests/oracle_tests.cpp covers paths, cycles, stars, disconnected graphs, parallel edges, self-loops and isolated vertices, along with 2,000 random multigraphs checked against an independent Tarjan implementation.
+
+All these tests can be run using make test.
+
+The differential test directly calls the graph and block-cut-tree invariant checkers. The detailed BCC and 2-ECC invariant checks are run through their separate Structure A and Structure B test programs.
 
 ### 7.4 Bug log
 
@@ -363,6 +466,8 @@ owner should confirm.
 | 11 | 2026-11-15 | bench | Figure 6 understated Structure A's cache misses per solve by a sixth. `bench/cache_profile.sh` divided every structure's net count by REPS + 1 = 6 solves, but `bin/bench` always makes one reference A solve, which the `none` baseline also makes, so the A run adds only 5 solves (B adds 6: five timed, one warm-up). The script also started `taskset` under `perf`, so the E-core (`cpu_atom`) counters picked up the start of each run, and the plot added them in. On the data of PR #25 the fix reverses the A/B order in one of the eight bar pairs (L3 misses at V = 10^5, E = 5 × 10^5). Introduced in [`7280a4f`](https://github.com/cse250001026/cs253-oops-p04/commit/7280a4f). | Review of the per-solve arithmetic; confirmed by counting instructions for runs of 5 and 10 repetitions: (10 runs − 5 runs) ÷ 5 matched the fixed divisor to 0.01 % for A and B, while the old divisor gave 13.3 million instead of 16.0 million instructions per A solve. | [`034301c`](https://github.com/cse250001026/cs253-oops-p04/commit/034301c) (2026-11-15): the `solves` column is 0, 5 or 6 per structure, and `taskset` starts `perf`, so the E-core counters read `<not counted>`. The c3 data was measured with the fix. |
 | 12 | 2026-11-16 | build | The c2 checkpoint snapshot does not build with the README command. Tag c2 (13 Nov, on merge [`e6a7347`](https://github.com/cse250001026/cs253-oops-p04/commit/e6a7347)) has an empty (0-byte) `Makefile`, so `make` and `make test` fail there, and it contains two committed Windows build outputs, `bin/oracle_tests.exe` and `bin/test_structB.exe` (added in [`014f4f5`](https://github.com/cse250001026/cs253-oops-p04/commit/014f4f5)). The code itself met c2: built by hand at the tag, the differential test passes 10^5 operations with seed 20260928. | Audit of the checkpoint tags against the submission guidelines (`git archive c2`, then `make`). | [`2fd2d85`](https://github.com/cse250001026/cs253-oops-p04/commit/2fd2d85) and [`00488c6`](https://github.com/cse250001026/cs253-oops-p04/commit/00488c6) (14 Nov) removed the binaries; [`7592828`](https://github.com/cse250001026/cs253-oops-p04/commit/7592828) (14 Nov, PR [#20](https://github.com/cse250001026/cs253-oops-p04/pull/20)) added the Makefile. The tag was not moved, because shared history is not rewritten (§12). |
 | 13 | 2026-11-16 | build | Stale test binary: the Makefile's `HEADERS` did not list `app/block_cut_tree.hpp`, although `bin/differential_test` includes it through `oracle/invarient_checks.hpp` (since [`e80059b`](https://github.com/cse250001026/cs253-oops-p04/commit/e80059b)). After an edit to the block-cut tree, `make test` reported `bin/differential_test` up to date and ran the old binary. | Review of the Makefile's dependencies; confirmed with `touch app/block_cut_tree.hpp; make -n bin/differential_test`, which printed "is up to date". | The PR from `bench/cost-model-final` (16 Nov): `HEADERS` now includes `$(wildcard app/*.hpp)`, and the same command prints the compile line. |
+| 14 | 2026-11-16 | adversary | The checker called `add_edge` after a failed read and accepted endpoint IDs outside the graph. | Code review, then checked truncated input, a non-integer endpoint and an out-of-range endpoint. | The checker validates each read and endpoint pair before adding the edge. All three malformed cases exit with code 2. |
+| 15 | 2026-11-16 | adversary | The `25000 5` joined-clique case generated 100,001 vertices, one over the assignment limit. | Checked the generator's vertex count against the assignment limit. | Changed the case to `24999 5` and verified the generated graph has 99,997 vertices and 249,990 edges. |
 
 #### Found, not yet fixed
 
@@ -376,13 +481,9 @@ add any bug they found and fixed before committing, with the date, how it was fo
 
 ## 8. Adversarial inputs
 
-> **TO FILL: Raunak (construction and argument)** · 1–2 pages
-> In each sub-section, above its "Measured effect" paragraph: the command, how the generator builds the graph, and the worst-case argument (D5).
+The generators take an explicit seed and print it to stderr. The examples below use seed `20260928`. On small cases the script compares articulation points, bridge IDs and deletion-component counts against the BFS oracle. On larger cases it compares bridge IDs from A and B and prints A's articulation and block counts.
 
-**Measured effect.** Table 8.1 lists every adversarial input as measured in the c3 run (Figure 5, §11.5). Three things hold for all of them.
-- **Correct everywhere.** B's bridges match A's on all ten inputs. The full-size inputs are beyond the oracle's limits (§10), so `scripts/adversary.sh` checks a small version of every shape against the oracle instead; all of them match.
-- **Still linear.** Every input runs in 3.8–26.2 ms, less than the random graph with V = 10^5 and E = 5 × 10^5 (25–28 ms). What the inputs change is the cost per element: 11–101 ns per (V + E), against 42–47 ns on random graphs.
-- **A and B react in opposite ways.** Many bridges (the star, the paths, `gen_multi`) make A 1.7–2.8 times slower than B, because A builds two small vectors (`bcc_edge_ids`, `bcc_vertices`) for every biconnected component. Long cycles make B about 1.5 times slower than A (§8.2).
+**Measured effect.** Table 8.1 gives the c3 measurements (Figure 5, §11.5). A and B agree on bridge IDs for all ten benchmark inputs. Across the two structures, the adversarial cases take 3.8–26.2 ms. A takes longer on the star, paths and multigraph, where it builds many small biconnected components. B takes longer on the long cycles.
 
 **Table 8.1.** Adversarial inputs (`results/raw/adversarial.csv`), mean ± 1 sd of 5 runs; seed 20260928. The last row is the random graph of the same V, for comparison.
 
@@ -402,21 +503,33 @@ add any bug they found and fixed before committing, with the date, how it was fo
 
 ### 8.1 Graphs where only the root rule decides the answer (`gen_root`, six modes)
 
-**Measured effect.** All six modes agree at n = 10^5 (B against A) and at n = 11 against the oracle (`scripts/adversary.sh`), so the root rule is applied correctly. A applies it through one formula for every vertex, `pieces = separated[v] + (parent[v] != -1)`, not through a separate root test. The rule decides correctness, not cost: the six modes take 6.7–17.2 ms with A and 3.8–10.6 ms with B. The star, whose root is the only articulation point and has 99,999 DFS children, is B's fastest input (19.0 ns per (V + E)) and is 2.8 times slower with A, which builds one biconnected component per bridge.
+Run `bin/gen_root MODE 11 20260928` with `cycle`, `path`, `clique`, `star`, `twocycles` and `comps`. Vertex 0 stays first in the construction. In the cycle, endpoint-rooted path and clique, DFS from 0 reaches the rest of its component through one child. The star has one child per leaf. Two cycles sharing vertex 0 give one child per cycle. The `comps` mode builds disjoint triangles and leaves any leftover vertices isolated, exercising multiple DFS roots.
+
+[D5](docs/derivations/D5_250001060.pdf) shows that deleting a root leaves one piece per DFS child. Applying the non-root rule would flag a root with one child. Skipping roots altogether would miss the star centre and the shared vertex of the two cycles. Structure A counts the pieces with `separated[v] + (parent[v] != -1)`.
+
+**Measured effect.** All six 11-vertex cases match the BFS oracle, including articulation points and deletion-component counts. Five of the benchmark cases use 100,000 vertices and the clique uses 1,000. A and B agree on bridge IDs in all six. The star's root has 99,999 DFS children and is its sole articulation point. A builds one block per bridge and takes about 2.8 times as long as B.
 
 ### 8.2 A long simple cycle (`gen_cycle`)
+
+Run `bin/gen_cycle 100000 20260928`. Join each shuffled vertex to the next and close the cycle by joining the last to the first. Deleting a vertex leaves a connected path, and deleting an edge leaves a spanning path. DFS follows a chain, and the closing back edge covers the entire DFS tree path.
 
 **Measured effect.** No articulation points and no bridges, at n = 300 (matching the oracle) and at n = 10^5. The long cycles (`gen_cycle` and `gen_root cycle`) are A's cheapest sparse inputs (33–34 ns per (V + E)) and B's worst relative to A (t_B / t_A = 1.54–1.55). B's DFS tree is a single path of 99,999 edges, and the one non-tree edge makes `markCyclePath` walk all of it, uniting 99,999 times in one call. A closes the whole cycle as one biconnected component. B is still linear: 10.4 ms.
 
 ### 8.3 Cliques joined at one vertex (`gen_cliques`)
 
+Run `bin/gen_cliques 4 700 20260928` for a dense case or `bin/gen_cliques 24999 5 20260928` for many blocks. Give each of the k cliques the same hub and s − 1 private vertices, then add every pair inside each clique. Deleting the hub leaves k separate cliques. Deleting any private vertex keeps the rest connected through the hub. The many-block case has 99,997 vertices and 249,990 edges.
+
 **Measured effect.** Four cliques of 700 vertices sharing one vertex (V = 2,797, E = 978,600) give one articulation point, four biconnected components and no bridges; the 4 × 12 and 5 × 2 versions match the oracle. This is the densest input and the cheapest per element for both structures (A 18.8 and B 11.9 ns per (V + E)), because adjacency lists of about 700 entries are read in order. B is 1.6 times faster than A. At most V − 1 = 2,796 tree edges can be marked, so at least 973,008 of the 975,804 non-tree edges (99.7 %) end their path marking after a single find.
 
 ### 8.4 Paths deep enough to overflow a recursive DFS (`gen_path`, `gen_root path`)
 
+Run `bin/gen_path 100000 20260928`. Shuffle the labels, put vertex 0 at an endpoint and join consecutive vertices. DFS starting at 0 reaches 99,999 edges deep, regardless of edge order. Every edge is a bridge, and every internal vertex is an articulation point.
+
 **Measured effect.** Since the path starts at vertex 0 (bug 8), the DFS goes n − 1 = 99,999 levels deep. Both structures finish. On `gen_path`, A takes 18.9 ms and B 8.7 ms; on `gen_root path`, 17.2 and 7.7 ms. On a 10^6-vertex path they take 522 and 245 ms (§11.8). A recursive version of the same DFS (Tarjan's low-link, written for this check; default 8 MiB stack, g++ 16.2.1) crashes with a stack overflow on both 10^5-vertex paths at `-O0`, though not at `-O2`, and on the 10^6-vertex path at both `-O0` and `-O2`. The path is A's second most expensive input per element (94.6 ns per (V + E), twice its random-graph cost): every edge is a bridge, so A builds 99,999 biconnected components of one edge each. B is 2.2 times faster.
 
 ### 8.5 Parallel edges and self-loops (`gen_multi`, beyond the named targets)
+
+Run `bin/gen_multi 100000 20260928`. Start with a shuffled path, decide whether to double each link and whether to add a loop at each vertex, then shuffle the edge list. An undoubled link is the only edge across its path cut. A doubled link has a second edge across the cut, and a self-loop stays on one side. Internal vertices remain articulation points.
 
 **Measured effect.** This input has 159,803 edges on 10^5 vertices, including 9,814 self-loops. Enough edges are doubled that only 50,009 of them are bridges, and `scripts/adversary.sh` counts 99,998 articulation points. The 300-vertex version (486 edges, 138 bridges) matches the oracle, so all three modules treat these edges the same way. Self-loops are stored but kept out of the adjacency lists. A doubled edge is never a bridge, and the structures get this right because the DFS skips its parent edge by ID, not by parent vertex. This is the most expensive input per element for both structures (A 101.0 and B 59.0 ns per (V + E)). It combines the path's depth with many components to build: 99,999 biconnected components in A and 50,010 2-edge-connected components in B.
 
@@ -760,6 +873,8 @@ Commands, from the repository root after `make` (each count per solve is the run
 > **TO FILL: Deepak, with one line from each member** · ½ page
 > What does not work, what you would do differently, and what you would measure next. Each member adds one honest line about their module.
 - **Block-Cut Tree (`app/`):** When both query endpoints $x$ and $y$ fall inside the DFS subtree of cut vertex $v$, `separates(v, x, y)` binary-searches $v$'s children in $O(\log(\text{deg}_T(v)))$ time; storing a flat Euler tour with a sparse table would make even this case $O(1)$ at the cost of $O(V \log V)$ extra memory.
+
+- **Adversary.** At full scale the checker asserts agreement on bridge IDs. It reports A's articulation and block counts, so an incorrect count by itself does not fail the run. A next step is to check those counts against the expected values for each constructed graph.
 
 ## 13. References
 

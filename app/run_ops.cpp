@@ -26,12 +26,23 @@ int main(int argc, char* argv[]) {
     }
 
     int n, m;
-    if (!(cin >> n >> m)) return 0;
+    if (!(cin >> n >> m) || n < 0 || m < 0) {
+        cerr << "run_ops: bad header, expected \"n m\" with n, m >= 0\n";
+        return 1;
+    }
 
     Graph g(n);
     for (int i = 0; i < m; i++) {
         int u, v;
-        cin >> u >> v;
+        if (!(cin >> u >> v)) {
+            cerr << "run_ops: header says " << m << " edges, read " << i << "\n";
+            return 1;
+        }
+        if (u < 0 || u >= n || v < 0 || v >= n) {
+            cerr << "run_ops: edge " << i << " (" << u << ", " << v
+                 << ") is outside 0.." << n - 1 << "\n";
+            return 1;
+        }
         g.add_edge(u, v);
     }
 

@@ -43,7 +43,7 @@ echo
 echo "== full scale, Structure A against Structure B =="
 run_case plain gen_path 100000 $SEED
 run_case plain gen_cycle 100000 $SEED
-run_case plain gen_cliques 25000 5 $SEED
+run_case plain gen_cliques 24999 5 $SEED
 run_case plain gen_cliques 4 700 $SEED
 run_case plain gen_multi 100000 $SEED
 
